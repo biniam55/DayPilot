@@ -26,7 +26,8 @@ import {
   TrendingUp,
   AlertTriangle,
   History,
-  Menu
+  Menu,
+  Loader2
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -60,6 +61,9 @@ import {
   Tooltip, 
   Cell 
 } from "recharts";
+import { useRouter } from 'next/navigation';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
 
 const INITIAL_TASKS: Task[] = [
   {
@@ -128,6 +132,10 @@ interface Notification {
 
 export default function DayPilotDashboard() {
   const { toast } = useToast();
+  const router = useRouter();
+  const auth = useAuth();
+  const { user, loading: authLoading } = useUser();
+
   const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
@@ -148,6 +156,42 @@ export default function DayPilotDashboard() {
     const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
     setIsDarkMode(isDark);
   }, []);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace('/login');
+    }
+  }, [user, authLoading, router]);
+
+  // Sync profile state with Firebase User if available
+  useEffect(() => {
+    if (user) {
+      setProfile(prev => ({
+        ...prev,
+        name: user.displayName || prev.name,
+        email: user.email || prev.email,
+        avatarUrl: user.photoURL || prev.avatarUrl,
+      }));
+    }
+  }, [user]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.replace('/login');
+      toast({
+        title: "Logged out",
+        description: "You have been successfully signed out.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Logout failed",
+        description: error.message,
+      });
+    }
+  };
 
   const toggleDarkMode = () => {
     const newMode = !isDarkMode;
@@ -272,6 +316,16 @@ export default function DayPilotDashboard() {
   }, [tasks]);
 
   const categories = Array.from(new Set(tasks.map(t => t.category || 'General')));
+
+  if (authLoading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) return null;
 
   const NavContent = () => (
     <>
@@ -416,7 +470,7 @@ export default function DayPilotDashboard() {
                    <User className="w-4 h-4 mr-2" /> Edit Profile
                  </DropdownMenuItem>
                  <DropdownMenuSeparator />
-                 <DropdownMenuItem className="text-destructive">
+                 <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
                    <LogOut className="w-4 h-4 mr-2" /> Log out
                  </DropdownMenuItem>
                </DropdownMenuContent>
