@@ -1,14 +1,13 @@
-
 "use client"
 
-import React, { useState } from 'react';
-import { Task, UserPreferences, Priority } from "@/lib/types";
+import React, { useState, useEffect } from 'react';
+import { Task, UserPreferences, Priority, UserProfile } from "@/lib/types";
 import { Timeline } from "@/components/Timeline";
 import { TaskCard } from "@/components/TaskCard";
 import { QuickTaskInput } from "@/components/QuickTaskInput";
 import { AIScheduleAssistant } from "@/components/AIScheduleAssistant";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, ListTodo, LayoutDashboard, Settings, Compass, Search, Bell, Tag, CheckCircle2, Clock, Trash2, Plus, Save } from "lucide-react";
+import { Calendar as CalendarIcon, ListTodo, LayoutDashboard, Settings, Compass, Search, Bell, Tag, CheckCircle2, Clock, Trash2, Plus, Save, User, LogOut } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -19,7 +18,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const INITIAL_TASKS: Task[] = [
   {
@@ -60,12 +68,27 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   preferredBreaks: [{ start: "12:30", durationMinutes: 60 }]
 };
 
+const DEFAULT_PROFILE: UserProfile = {
+  name: "John Doe",
+  email: "john.doe@example.com",
+  avatarUrl: "https://picsum.photos/seed/user123/100/100",
+  bio: "Productivity enthusiast and early riser."
+};
+
 export default function DayPilotDashboard() {
   const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
+  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [activeTab, setActiveTab] = useState('all');
   const [view, setView] = useState<'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings'>('planner');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [today, setToday] = useState<Date>(new Date());
+
+  useEffect(() => {
+    // Update "today" once on client mount to avoid hydration mismatches
+    setToday(new Date());
+  }, []);
 
   const addTask = (name: string) => {
     const newTask: Task = {
@@ -100,6 +123,11 @@ export default function DayPilotDashboard() {
 
   const savePreferences = (newPrefs: UserPreferences) => {
     setPreferences(newPrefs);
+  };
+
+  const saveProfile = (newProfile: UserProfile) => {
+    setProfile(newProfile);
+    setIsEditingProfile(false);
   };
 
   const filteredTasks = tasks.filter(t => {
@@ -200,9 +228,35 @@ export default function DayPilotDashboard() {
                <Bell className="w-4 h-4" />
                <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full border-2 border-background" />
              </Button>
-             <div className="w-8 h-8 rounded-full bg-muted border overflow-hidden">
-               <img src="https://picsum.photos/seed/user/100/100" alt="Avatar" />
-             </div>
+             
+             <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <Button variant="ghost" className="flex items-center gap-2 px-2 hover:bg-muted/50 rounded-full">
+                   <Avatar className="h-8 w-8 border">
+                     <AvatarImage src={profile.avatarUrl} alt={profile.name} />
+                     <AvatarFallback>{profile.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                   </Avatar>
+                   <div className="hidden lg:block text-left">
+                     <p className="text-xs font-bold leading-none">{profile.name}</p>
+                     <p className="text-[10px] text-muted-foreground mt-0.5">{profile.email}</p>
+                   </div>
+                 </Button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent align="end" className="w-56">
+                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                 <DropdownMenuSeparator />
+                 <DropdownMenuItem onClick={() => setIsEditingProfile(true)}>
+                   <User className="w-4 h-4 mr-2" /> Edit Profile
+                 </DropdownMenuItem>
+                 <DropdownMenuItem onClick={() => setView('settings')}>
+                   <Settings className="w-4 h-4 mr-2" /> Settings
+                 </DropdownMenuItem>
+                 <DropdownMenuSeparator />
+                 <DropdownMenuItem className="text-destructive">
+                   <LogOut className="w-4 h-4 mr-2" /> Log out
+                 </DropdownMenuItem>
+               </DropdownMenuContent>
+             </DropdownMenu>
           </div>
         </header>
 
@@ -351,7 +405,7 @@ export default function DayPilotDashboard() {
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold">Calendar Quick-View</h3>
                     <div className="bg-card border rounded-xl p-6 flex justify-center shadow-sm">
-                      <Calendar className="rounded-md border" />
+                      <Calendar mode="single" selected={today} className="rounded-md border" />
                     </div>
                   </div>
                 </div>
@@ -414,14 +468,17 @@ export default function DayPilotDashboard() {
                 <div className="p-6 border-b flex items-center justify-between bg-muted/10">
                   <h3 className="text-lg font-bold">Monthly Overview</h3>
                   <div className="flex gap-2">
-                     <Button variant="outline" size="sm">Today</Button>
-                     <Button variant="outline" size="sm">Month</Button>
-                     <Button variant="outline" size="sm">Week</Button>
+                     <Button variant="outline" size="sm" onClick={() => setToday(new Date())}>Today</Button>
                   </div>
                 </div>
                 <div className="flex-1 flex flex-col lg:flex-row gap-8 p-8 overflow-hidden">
                    <div className="shrink-0 flex justify-center">
-                      <Calendar mode="single" className="border rounded-xl shadow-sm bg-card" />
+                      <Calendar 
+                        mode="single" 
+                        selected={today} 
+                        onSelect={(date) => date && setToday(date)}
+                        className="border rounded-xl shadow-sm bg-card" 
+                      />
                    </div>
                    <div className="flex-1 space-y-4 min-w-0 flex flex-col">
                       <h4 className="text-sm font-bold border-b pb-2 flex items-center gap-2">
@@ -557,20 +614,26 @@ export default function DayPilotDashboard() {
 
                 <Card className="shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-lg">Account</CardTitle>
-                    <CardDescription>Manage your profile and synchronization settings.</CardDescription>
+                    <CardTitle className="text-lg">Profile Information</CardTitle>
+                    <CardDescription>Update your personal details and public profile.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-muted border overflow-hidden shadow-sm">
-                        <img src="https://picsum.photos/seed/user/100/100" alt="Avatar" />
-                      </div>
+                      <Avatar className="w-16 h-16 border shadow-sm">
+                        <AvatarImage src={profile.avatarUrl} alt={profile.name} />
+                        <AvatarFallback>{profile.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold truncate">John Doe</p>
-                        <p className="text-xs text-muted-foreground truncate">john.doe@example.com</p>
+                        <p className="text-base font-bold truncate">{profile.name}</p>
+                        <p className="text-sm text-muted-foreground truncate">{profile.email}</p>
                       </div>
-                      <Button variant="outline" size="sm">Edit Profile</Button>
+                      <Button variant="outline" size="sm" onClick={() => setIsEditingProfile(true)}>Edit Profile</Button>
                     </div>
+                    {profile.bio && (
+                      <div className="p-3 bg-muted/20 rounded-lg border text-xs text-muted-foreground">
+                        {profile.bio}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -646,6 +709,56 @@ export default function DayPilotDashboard() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingTask(null)}>Cancel</Button>
             <Button onClick={() => editingTask && updateTask(editingTask)}>Save changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={isEditingProfile} onOpenChange={setIsEditingProfile}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogDescription>Update your personal information and profile picture.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="profile-name">Full Name</Label>
+              <Input 
+                id="profile-name" 
+                value={profile.name} 
+                onChange={(e) => setProfile({...profile, name: e.target.value})}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="profile-email">Email Address</Label>
+              <Input 
+                id="profile-email" 
+                type="email"
+                value={profile.email} 
+                onChange={(e) => setProfile({...profile, email: e.target.value})}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="profile-avatar">Avatar URL</Label>
+              <Input 
+                id="profile-avatar" 
+                value={profile.avatarUrl} 
+                onChange={(e) => setProfile({...profile, avatarUrl: e.target.value})}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="profile-bio">Short Bio</Label>
+              <Textarea 
+                id="profile-bio" 
+                value={profile.bio || ''} 
+                onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                placeholder="Tell us about yourself..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditingProfile(false)}>Cancel</Button>
+            <Button onClick={() => saveProfile(profile)}>Save Profile</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

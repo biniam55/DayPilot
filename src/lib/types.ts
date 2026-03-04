@@ -23,3 +23,10 @@ export interface UserPreferences {
     durationMinutes: number;
   }>;
 }
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  avatarUrl: string;
+  bio?: string;
+}
