@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from 'react';
@@ -32,28 +33,28 @@ export function Timeline({ tasks }: TimelineProps) {
 
   return (
     <div className="flex flex-col h-full bg-card rounded-xl border shadow-sm overflow-hidden min-h-0">
-      <div className="p-4 border-b bg-muted/30 shrink-0">
-        <h3 className="font-semibold text-sm">Today's Schedule</h3>
+      <div className="p-3 sm:p-4 border-b bg-muted/30 shrink-0">
+        <h3 className="font-semibold text-xs sm:text-sm">Today's Schedule</h3>
       </div>
       
       <ScrollArea className="flex-1">
-        <div className="p-4 pt-6">
+        <div className="p-3 sm:p-4 pt-6">
           <div className="relative min-h-[960px]">
             {/* Time markers */}
             {HOURS.map((hour) => (
               <div key={hour} className="relative h-16 border-t border-muted last:border-b">
-                <span className="absolute -top-3 left-0 text-[10px] font-bold text-muted-foreground bg-card pr-2 z-10">
+                <span className="absolute -top-3 left-0 text-[9px] sm:text-[10px] font-bold text-muted-foreground bg-card pr-2 z-10">
                   {hour > 12 ? hour - 12 : hour} {hour >= 12 ? 'PM' : 'AM'}
                 </span>
               </div>
             ))}
 
             {/* Task blocks */}
-            <div className="absolute inset-0 left-16 right-0">
+            <div className="absolute inset-0 left-12 sm:left-16 right-0">
               {scheduledTasks.map((task) => {
                 const startPos = calculatePosition(task.scheduledStartTime!);
                 const endPos = calculatePosition(task.scheduledEndTime!);
-                const duration = Math.max(endPos - startPos, 32);
+                const duration = Math.max(endPos - startPos, 40); // Slightly taller for mobile readability
 
                 if (startPos < 0 || startPos > 960) return null;
 
@@ -61,7 +62,7 @@ export function Timeline({ tasks }: TimelineProps) {
                   <div
                     key={task.id}
                     className={cn(
-                      "absolute left-1 right-2 p-2 rounded-lg border shadow-sm flex flex-col justify-center overflow-hidden transition-all hover:ring-2 ring-primary/20 z-20",
+                      "absolute left-1 right-2 p-1.5 sm:p-2 rounded-lg border shadow-sm flex flex-col justify-center overflow-hidden transition-all hover:ring-2 ring-primary/20 z-20",
                       task.isCompleted ? "bg-muted text-muted-foreground" : "bg-primary/5 border-primary/20"
                     )}
                     style={{
@@ -70,14 +71,14 @@ export function Timeline({ tasks }: TimelineProps) {
                     }}
                   >
                     <div className="flex items-center justify-between gap-2 overflow-hidden">
-                      <span className="text-[11px] font-bold truncate leading-tight">
+                      <span className="text-[10px] sm:text-[11px] font-bold truncate leading-tight">
                         {task.name}
                       </span>
-                      <Badge variant="outline" className="text-[8px] h-3 px-1 border-primary/30 shrink-0 bg-background/50">
-                        {task.category || 'Gen'}
+                      <Badge variant="outline" className="text-[7px] sm:text-[8px] h-3 px-0.5 sm:px-1 border-primary/30 shrink-0 bg-background/50 hidden xs:inline-flex">
+                        {task.category?.substring(0, 3) || 'Gen'}
                       </Badge>
                     </div>
-                    <span className="text-[9px] text-muted-foreground">
+                    <span className="text-[8px] sm:text-[9px] text-muted-foreground font-medium">
                       {task.scheduledStartTime} - {task.scheduledEndTime}
                     </span>
                   </div>
