@@ -2,18 +2,23 @@
 "use client"
 
 import React, { useState } from 'react';
-import { Task, UserPreferences } from "@/lib/types";
+import { Task, UserPreferences, Priority } from "@/lib/types";
 import { Timeline } from "@/components/Timeline";
 import { TaskCard } from "@/components/TaskCard";
 import { QuickTaskInput } from "@/components/QuickTaskInput";
 import { AIScheduleAssistant } from "@/components/AIScheduleAssistant";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, ListTodo, LayoutDashboard, Settings, Compass, Search, Bell, Tag, CheckCircle2, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, ListTodo, LayoutDashboard, Settings, Compass, Search, Bell, Tag, CheckCircle2, Clock, Trash2, Plus, Save } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 const INITIAL_TASKS: Task[] = [
@@ -57,9 +62,10 @@ const DEFAULT_PREFERENCES: UserPreferences = {
 
 export default function DayPilotDashboard() {
   const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
-  const [preferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
+  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [activeTab, setActiveTab] = useState('all');
-  const [view, setView] = useState<'dashboard' | 'planner' | 'categories' | 'calendar'>('planner');
+  const [view, setView] = useState<'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings'>('planner');
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const addTask = (name: string) => {
     const newTask: Task = {
@@ -74,12 +80,25 @@ export default function DayPilotDashboard() {
     setTasks([newTask, ...tasks]);
   };
 
+  const updateTask = (updatedTask: Task) => {
+    setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+    setEditingTask(null);
+  };
+
+  const deleteTask = (id: string) => {
+    setTasks(tasks.filter(t => t.id !== id));
+  };
+
   const toggleTaskComplete = (id: string) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, isCompleted: !t.isCompleted, status: t.isCompleted ? 'todo' : 'completed' } : t));
   };
 
   const handleScheduleUpdate = (scheduledTasks: Task[]) => {
     setTasks(scheduledTasks);
+  };
+
+  const savePreferences = (newPrefs: UserPreferences) => {
+    setPreferences(newPrefs);
   };
 
   const filteredTasks = tasks.filter(t => {
@@ -144,7 +163,11 @@ export default function DayPilotDashboard() {
             </div>
             <p className="text-[10px] text-muted-foreground">15/20 tasks completed this week</p>
           </div>
-          <Button variant="ghost" className="w-full justify-start gap-3 mt-4 h-10 text-sm font-medium text-muted-foreground">
+          <Button 
+            variant="ghost" 
+            onClick={() => setView('settings')}
+            className={cn("w-full justify-start gap-3 mt-4 h-10 text-sm font-medium", view === 'settings' ? "bg-primary/5 text-primary" : "text-muted-foreground hover:bg-primary/5 hover:text-primary")}
+          >
             <Settings className="w-4 h-4" />
             Settings
           </Button>
@@ -160,6 +183,7 @@ export default function DayPilotDashboard() {
               {view === 'dashboard' && 'Dashboard Overview'}
               {view === 'categories' && 'Task Categories'}
               {view === 'calendar' && 'Full Schedule'}
+              {view === 'settings' && 'User Settings'}
             </h2>
             <div className="relative w-64 hidden lg:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -211,6 +235,8 @@ export default function DayPilotDashboard() {
                               key={task.id} 
                               task={task} 
                               onToggleComplete={toggleTaskComplete} 
+                              onEdit={setEditingTask}
+                              onDelete={deleteTask}
                             />
                           ))
                         ) : (
@@ -250,16 +276,6 @@ export default function DayPilotDashboard() {
                         className="h-full bg-primary transition-all duration-500" 
                         style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.isCompleted).length / tasks.length) * 100 : 0}%` }}
                       />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3 mt-4">
-                       <div className="p-3 bg-white rounded-lg border text-center shadow-sm">
-                          <p className="text-[10px] text-muted-foreground font-medium mb-1">Pending</p>
-                          <p className="text-sm font-bold">{tasks.filter(t => !t.isCompleted).length}</p>
-                       </div>
-                       <div className="p-3 bg-white rounded-lg border text-center shadow-sm">
-                          <p className="text-[10px] text-muted-foreground font-medium mb-1">Focus Score</p>
-                          <p className="text-sm font-bold text-accent">92</p>
-                       </div>
                     </div>
                   </div>
                 </div>
@@ -415,8 +431,190 @@ export default function DayPilotDashboard() {
               </div>
             </div>
           )}
+
+          {view === 'settings' && (
+            <div className="p-8 max-w-2xl mx-auto space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Work Schedule</CardTitle>
+                  <CardDescription>Configure your daily work hours and AI scheduling constraints.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="start">Work Day Start</Label>
+                      <Input 
+                        id="start" 
+                        type="time" 
+                        value={preferences.workDayStart} 
+                        onChange={(e) => setPreferences({...preferences, workDayStart: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="end">Work Day End</Label>
+                      <Input 
+                        id="end" 
+                        type="time" 
+                        value={preferences.workDayEnd} 
+                        onChange={(e) => setPreferences({...preferences, workDayEnd: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base">Break Times</Label>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setPreferences({
+                          ...preferences,
+                          preferredBreaks: [...preferences.preferredBreaks, { start: "12:00", durationMinutes: 30 }]
+                        })
+                      }}>
+                        <Plus className="w-4 h-4 mr-2" /> Add Break
+                      </Button>
+                    </div>
+                    
+                    {preferences.preferredBreaks.map((breakItem, idx) => (
+                      <div key={idx} className="flex items-center gap-4 p-3 border rounded-lg bg-muted/20">
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Start Time</Label>
+                          <Input 
+                            type="time" 
+                            value={breakItem.start} 
+                            onChange={(e) => {
+                              const newBreaks = [...preferences.preferredBreaks];
+                              newBreaks[idx].start = e.target.value;
+                              setPreferences({...preferences, preferredBreaks: newBreaks});
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Duration (min)</Label>
+                          <Input 
+                            type="number" 
+                            value={breakItem.durationMinutes} 
+                            onChange={(e) => {
+                              const newBreaks = [...preferences.preferredBreaks];
+                              newBreaks[idx].durationMinutes = parseInt(e.target.value) || 0;
+                              setPreferences({...preferences, preferredBreaks: newBreaks});
+                            }}
+                          />
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="mt-4 text-destructive"
+                          onClick={() => {
+                            setPreferences({
+                              ...preferences,
+                              preferredBreaks: preferences.preferredBreaks.filter((_, i) => i !== idx)
+                            });
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+                <CardFooter className="border-t pt-6">
+                  <Button className="w-full gap-2" onClick={() => savePreferences(preferences)}>
+                    <Save className="w-4 h-4" /> Save Preferences
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Account</CardTitle>
+                  <CardDescription>Manage your profile and synchronization settings.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-muted border overflow-hidden">
+                      <img src="https://picsum.photos/seed/user/100/100" alt="Avatar" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold">John Doe</p>
+                      <p className="text-xs text-muted-foreground">john.doe@example.com</p>
+                    </div>
+                    <Button variant="outline" size="sm">Edit Profile</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </main>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+            <DialogDescription>Modify your task details and priorities here.</DialogDescription>
+          </DialogHeader>
+          {editingTask && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name">Task Name</Label>
+                <Input 
+                  id="name" 
+                  value={editingTask.name} 
+                  onChange={(e) => setEditingTask({...editingTask, name: e.target.value})}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea 
+                  id="description" 
+                  value={editingTask.description} 
+                  onChange={(e) => setEditingTask({...editingTask, description: e.target.value})}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="priority">Priority</Label>
+                  <Select 
+                    value={editingTask.priority} 
+                    onValueChange={(val: Priority) => setEditingTask({...editingTask, priority: val})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="duration">Duration (min)</Label>
+                  <Input 
+                    id="duration" 
+                    type="number"
+                    value={editingTask.estimatedTimeMinutes} 
+                    onChange={(e) => setEditingTask({...editingTask, estimatedTimeMinutes: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="category">Category</Label>
+                <Input 
+                  id="category" 
+                  value={editingTask.category} 
+                  onChange={(e) => setEditingTask({...editingTask, category: e.target.value})}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingTask(null)}>Cancel</Button>
+            <Button onClick={() => editingTask && updateTask(editingTask)}>Save changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

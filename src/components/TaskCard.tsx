@@ -1,18 +1,26 @@
+
 "use client"
 
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Clock, Tag, CalendarDays, MoreHorizontal } from "lucide-react";
+import { Clock, Tag, CalendarDays, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Task } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TaskCardProps {
   task: Task;
   onToggleComplete: (id: string) => void;
-  onEdit?: (task: Task) => void;
+  onEdit: (task: Task) => void;
+  onDelete: (id: string) => void;
 }
 
 const priorityColors = {
@@ -21,7 +29,7 @@ const priorityColors = {
   low: "bg-green-100 text-green-700 border-green-200",
 };
 
-export function TaskCard({ task, onToggleComplete, onEdit }: TaskCardProps) {
+export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardProps) {
   return (
     <Card className={cn(
       "group relative border-l-4 transition-all hover:shadow-md",
@@ -74,9 +82,21 @@ export function TaskCard({ task, onToggleComplete, onEdit }: TaskCardProps) {
           </div>
         </div>
 
-        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-          <MoreHorizontal className="w-4 h-4" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(task)} className="gap-2">
+              <Pencil className="w-3.5 h-3.5" /> Edit Task
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDelete(task.id)} className="gap-2 text-destructive focus:text-destructive">
+              <Trash2 className="w-3.5 h-3.5" /> Delete Task
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </CardContent>
     </Card>
   );
