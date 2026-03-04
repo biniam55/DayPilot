@@ -17,6 +17,7 @@ export function Timeline({ tasks }: TimelineProps) {
 
   const calculatePosition = (time: string) => {
     try {
+      if (!time) return 0;
       const parts = time.split(':');
       if (parts.length !== 2) return 0;
       const h = parseInt(parts[0], 10);
@@ -52,9 +53,8 @@ export function Timeline({ tasks }: TimelineProps) {
               {scheduledTasks.map((task) => {
                 const startPos = calculatePosition(task.scheduledStartTime!);
                 const endPos = calculatePosition(task.scheduledEndTime!);
-                const duration = Math.max(endPos - startPos, 32); // Min 32px for usability
+                const duration = Math.max(endPos - startPos, 32);
 
-                // Filter tasks outside visible range
                 if (startPos < 0 || startPos > 960) return null;
 
                 return (
