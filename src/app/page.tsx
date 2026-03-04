@@ -113,7 +113,6 @@ export default function DayPilotDashboard() {
 
   useEffect(() => {
     setToday(new Date());
-    // Check system preference or saved preference
     const isDark = document.documentElement.classList.contains('dark');
     setIsDarkMode(isDark);
   }, []);
@@ -177,7 +176,6 @@ export default function DayPilotDashboard() {
         title: "Well done!",
         description: `You finished "${task.name}". Keep it up!`,
       });
-      // Add a notification
       setNotifications(prev => [{
         id: Math.random().toString(),
         title: 'Task Completed',
@@ -228,7 +226,7 @@ export default function DayPilotDashboard() {
   return (
     <div className="flex h-screen bg-background overflow-hidden text-foreground">
       {/* Sidebar Navigation */}
-      <aside className="w-64 border-r bg-card hidden md:flex flex-col">
+      <aside className="w-64 border-r bg-card hidden md:flex flex-col shrink-0">
         <div className="p-6 flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold italic shadow-lg">
             D
@@ -296,8 +294,8 @@ export default function DayPilotDashboard() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b bg-card/50 backdrop-blur-md flex items-center justify-between px-8 sticky top-0 z-10">
+      <main className="flex-1 flex flex-col min-w-0 h-full relative">
+        <header className="h-16 border-b bg-card/50 backdrop-blur-md flex items-center justify-between px-8 shrink-0 z-20">
           <div className="flex items-center gap-4">
             <h2 className="text-lg font-semibold hidden sm:block">
               {view === 'planner' && 'My Daily Plan'}
@@ -382,18 +380,18 @@ export default function DayPilotDashboard() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden relative">
           {view === 'planner' && (
-            <div className="flex h-full gap-8 p-8 overflow-hidden">
-              <div className="w-full lg:w-[400px] h-full shrink-0">
+            <div className="flex h-full gap-8 p-8 overflow-hidden min-h-0">
+              <div className="w-full lg:w-[400px] h-full shrink-0 min-h-0">
                 <Timeline tasks={tasks} />
               </div>
 
-              <div className="flex-1 flex flex-col gap-6 min-w-0 overflow-hidden">
+              <div className="flex-1 flex flex-col gap-6 min-w-0 h-full overflow-hidden">
                 <QuickTaskInput onAdd={addTask} />
                 <div className="flex-1 flex flex-col bg-card rounded-xl border shadow-sm overflow-hidden min-h-0">
-                  <Tabs defaultValue="all" className="flex-1 flex flex-col" onValueChange={setActiveTab}>
-                    <div className="px-6 py-4 border-b flex items-center justify-between gap-4">
+                  <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+                    <div className="px-6 py-4 border-b flex items-center justify-between gap-4 shrink-0">
                       <TabsList className="bg-muted/50 h-9 p-1">
                         <TabsTrigger value="all" className="text-xs px-4 rounded-md">All</TabsTrigger>
                         <TabsTrigger value="todo" className="text-xs px-4 rounded-md">To-Do</TabsTrigger>
@@ -404,39 +402,40 @@ export default function DayPilotDashboard() {
                       </Badge>
                     </div>
 
-                    <ScrollArea className="flex-1">
-                      <div className="p-6 space-y-4">
-                        {filteredTasks.length > 0 ? (
-                          filteredTasks.map(task => (
-                            <TaskCard 
-                              key={task.id} 
-                              task={task} 
-                              onToggleComplete={toggleTaskComplete} 
-                              onEdit={setEditingTask}
-                              onDelete={deleteTask}
-                            />
-                          ))
-                        ) : (
-                          <div className="h-64 flex flex-col items-center justify-center text-center opacity-40">
-                            <ListTodo className="w-12 h-12 mb-4" />
-                            <p className="text-sm font-medium">No tasks found for this view</p>
-                            <p className="text-xs">Add a new task to get started!</p>
-                          </div>
-                        )}
-                      </div>
-                    </ScrollArea>
+                    <TabsContent value={activeTab} className="flex-1 min-h-0 m-0 relative">
+                      <ScrollArea className="h-full">
+                        <div className="p-6 space-y-4 pb-20">
+                          {filteredTasks.length > 0 ? (
+                            filteredTasks.map(task => (
+                              <TaskCard 
+                                key={task.id} 
+                                task={task} 
+                                onToggleComplete={toggleTaskComplete} 
+                                onEdit={setEditingTask}
+                                onDelete={deleteTask}
+                              />
+                            ))
+                          ) : (
+                            <div className="h-64 flex flex-col items-center justify-center text-center opacity-40">
+                              <ListTodo className="w-12 h-12 mb-4" />
+                              <p className="text-sm font-medium">No tasks found</p>
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </TabsContent>
                   </Tabs>
                 </div>
               </div>
 
-              <aside className="w-80 hidden xl:block shrink-0 overflow-y-auto pr-1">
+              <aside className="w-80 hidden xl:flex flex-col gap-6 shrink-0 h-full overflow-y-auto pr-1">
                 <AIScheduleAssistant 
                   tasks={tasks} 
                   preferences={preferences} 
                   onScheduleUpdate={handleScheduleUpdate} 
                 />
                 
-                <div className="mt-6 p-6 bg-primary/5 rounded-xl border border-primary/10">
+                <div className="p-6 bg-primary/5 rounded-xl border border-primary/10">
                   <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
                     <LayoutDashboard className="w-4 h-4 text-primary" />
                     Productivity Snapshot
@@ -462,7 +461,7 @@ export default function DayPilotDashboard() {
 
           {view === 'dashboard' && (
             <ScrollArea className="h-full">
-              <div className="p-8 space-y-8">
+              <div className="p-8 space-y-8 max-w-7xl mx-auto pb-20">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <Card className="bg-primary/5 border-primary/20">
                     <CardHeader className="pb-2">
@@ -537,7 +536,7 @@ export default function DayPilotDashboard() {
 
           {view === 'categories' && (
             <ScrollArea className="h-full">
-              <div className="p-8">
+              <div className="p-8 pb-20 max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {categories.map(cat => {
                     const catTasks = tasks.filter(t => (t.category || 'General') === cat);
@@ -574,40 +573,33 @@ export default function DayPilotDashboard() {
                       </Card>
                     );
                   })}
-                  {categories.length === 0 && (
-                    <div className="col-span-full h-64 flex flex-col items-center justify-center text-muted-foreground italic opacity-50">
-                      Create tasks with categories to see them grouped here.
-                    </div>
-                  )}
                 </div>
               </div>
             </ScrollArea>
           )}
 
           {view === 'calendar' && (
-            <div className="h-full flex flex-col p-8">
-              <div className="flex-1 bg-card border rounded-2xl flex flex-col overflow-hidden shadow-sm">
-                <div className="p-6 border-b flex items-center justify-between bg-muted/10">
-                  <h3 className="text-lg font-bold">Monthly Overview</h3>
-                  <div className="flex gap-2">
-                     <Button variant="outline" size="sm" onClick={() => setToday(new Date())}>Today</Button>
+            <ScrollArea className="h-full">
+              <div className="p-8 pb-20 max-w-7xl mx-auto">
+                <div className="bg-card border rounded-2xl flex flex-col overflow-hidden shadow-sm">
+                  <div className="p-6 border-b flex items-center justify-between bg-muted/10">
+                    <h3 className="text-lg font-bold">Monthly Overview</h3>
+                    <Button variant="outline" size="sm" onClick={() => setToday(new Date())}>Today</Button>
                   </div>
-                </div>
-                <div className="flex-1 flex flex-col lg:flex-row gap-8 p-8 overflow-hidden">
-                   <div className="shrink-0 flex justify-center">
-                      <Calendar 
-                        mode="single" 
-                        selected={today} 
-                        onSelect={(date) => date && setToday(date)}
-                        className="border rounded-xl shadow-sm bg-card" 
-                      />
-                   </div>
-                   <div className="flex-1 space-y-4 min-w-0 flex flex-col">
-                      <h4 className="text-sm font-bold border-b pb-2 flex items-center gap-2">
-                        <CalendarIcon className="w-4 h-4 text-primary" />
-                        Upcoming Deadlines
-                      </h4>
-                      <ScrollArea className="flex-1">
+                  <div className="flex flex-col lg:flex-row gap-8 p-8">
+                     <div className="shrink-0 flex justify-center">
+                        <Calendar 
+                          mode="single" 
+                          selected={today} 
+                          onSelect={(date) => date && setToday(date)}
+                          className="border rounded-xl shadow-sm bg-card" 
+                        />
+                     </div>
+                     <div className="flex-1 space-y-4 min-w-0">
+                        <h4 className="text-sm font-bold border-b pb-2 flex items-center gap-2">
+                          <CalendarIcon className="w-4 h-4 text-primary" />
+                          Upcoming Deadlines
+                        </h4>
                         <div className="space-y-3">
                           {tasks.filter(t => t.dueDate && !t.isCompleted).length > 0 ? (
                             tasks.filter(t => t.dueDate && !t.isCompleted).map(t => (
@@ -628,16 +620,16 @@ export default function DayPilotDashboard() {
                             </div>
                           )}
                         </div>
-                      </ScrollArea>
-                   </div>
+                     </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            </ScrollArea>
           )}
 
           {view === 'settings' && (
             <ScrollArea className="h-full">
-              <div className="p-8 max-w-2xl mx-auto space-y-6">
+              <div className="p-8 max-w-2xl mx-auto space-y-6 pb-20">
                 <Card className="shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-lg">Appearance & Theme</CardTitle>
@@ -741,7 +733,7 @@ export default function DayPilotDashboard() {
                         ))
                       ) : (
                         <p className="text-xs text-muted-foreground italic text-center py-4 bg-muted/10 rounded-lg border border-dashed">
-                          No breaks scheduled. Add one to optimize your AI plan.
+                          No breaks scheduled.
                         </p>
                       )}
                     </div>
@@ -770,11 +762,6 @@ export default function DayPilotDashboard() {
                       </div>
                       <Button variant="outline" size="sm" onClick={() => setIsEditingProfile(true)}>Edit Profile</Button>
                     </div>
-                    {profile.bio && (
-                      <div className="p-3 bg-muted/20 rounded-lg border text-xs text-muted-foreground">
-                        {profile.bio}
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -783,12 +770,11 @@ export default function DayPilotDashboard() {
         </div>
       </main>
 
-      {/* Edit Task Dialog */}
+      {/* Dialogs */}
       <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Task</DialogTitle>
-            <DialogDescription>Modify your task details and priorities here.</DialogDescription>
           </DialogHeader>
           {editingTask && (
             <div className="grid gap-4 py-4">
@@ -817,7 +803,7 @@ export default function DayPilotDashboard() {
                     onValueChange={(val: Priority) => setEditingTask({...editingTask, priority: val})}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select priority" />
+                      <SelectValue placeholder="Priority" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="low">Low</SelectItem>
@@ -842,7 +828,6 @@ export default function DayPilotDashboard() {
                   id="category" 
                   value={editingTask.category || ''} 
                   onChange={(e) => setEditingTask({...editingTask, category: e.target.value})}
-                  placeholder="e.g. Work, Health, Personal"
                 />
               </div>
             </div>
@@ -854,47 +839,27 @@ export default function DayPilotDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Profile Dialog */}
       <Dialog open={isEditingProfile} onOpenChange={setIsEditingProfile}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
-            <DialogDescription>Update your personal information and profile picture.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="profile-name">Full Name</Label>
-              <Input 
-                id="profile-name" 
-                value={profile.name} 
-                onChange={(e) => setProfile({...profile, name: e.target.value})}
-              />
+              <Label htmlFor="p-name">Full Name</Label>
+              <Input id="p-name" value={profile.name} onChange={(e) => setProfile({...profile, name: e.target.value})} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="profile-email">Email Address</Label>
-              <Input 
-                id="profile-email" 
-                type="email"
-                value={profile.email} 
-                onChange={(e) => setProfile({...profile, email: e.target.value})}
-              />
+              <Label htmlFor="p-email">Email</Label>
+              <Input id="p-email" value={profile.email} onChange={(e) => setProfile({...profile, email: e.target.value})} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="profile-avatar">Avatar URL</Label>
-              <Input 
-                id="profile-avatar" 
-                value={profile.avatarUrl} 
-                onChange={(e) => setProfile({...profile, avatarUrl: e.target.value})}
-              />
+              <Label htmlFor="p-avatar">Avatar URL</Label>
+              <Input id="p-avatar" value={profile.avatarUrl} onChange={(e) => setProfile({...profile, avatarUrl: e.target.value})} />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="profile-bio">Short Bio</Label>
-              <Textarea 
-                id="profile-bio" 
-                value={profile.bio || ''} 
-                onChange={(e) => setProfile({...profile, bio: e.target.value})}
-                placeholder="Tell us about yourself..."
-              />
+              <Label htmlFor="p-bio">Bio</Label>
+              <Textarea id="p-bio" value={profile.bio || ''} onChange={(e) => setProfile({...profile, bio: e.target.value})} />
             </div>
           </div>
           <DialogFooter>
