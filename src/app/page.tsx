@@ -7,7 +7,26 @@ import { TaskCard } from "@/components/TaskCard";
 import { QuickTaskInput } from "@/components/QuickTaskInput";
 import { AIScheduleAssistant } from "@/components/AIScheduleAssistant";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, ListTodo, LayoutDashboard, Settings, Compass, Search, Bell, Tag, CheckCircle2, Clock, Trash2, Plus, Save, User, LogOut } from "lucide-react";
+import { 
+  Calendar as CalendarIcon, 
+  ListTodo, 
+  LayoutDashboard, 
+  Settings, 
+  Compass, 
+  Search, 
+  Bell, 
+  Tag, 
+  CheckCircle2, 
+  Clock, 
+  Trash2, 
+  Plus, 
+  Save, 
+  User, 
+  LogOut,
+  Moon,
+  Sun,
+  Info
+} from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -28,6 +47,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 
 const INITIAL_TASKS: Task[] = [
   {
@@ -50,15 +71,6 @@ const INITIAL_TASKS: Task[] = [
     isCompleted: true,
     status: 'completed',
     category: 'Work',
-  },
-  {
-    id: '3',
-    name: 'Gym session',
-    priority: 'low',
-    estimatedTimeMinutes: 45,
-    isCompleted: false,
-    status: 'todo',
-    category: 'Health',
   }
 ];
 
@@ -75,7 +87,16 @@ const DEFAULT_PROFILE: UserProfile = {
   bio: "Productivity enthusiast and early riser."
 };
 
+interface Notification {
+  id: string;
+  title: string;
+  description: string;
+  time: string;
+  isRead: boolean;
+}
+
 export default function DayPilotDashboard() {
+  const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
@@ -84,11 +105,28 @@ export default function DayPilotDashboard() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [today, setToday] = useState<Date>(new Date());
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([
+    { id: '1', title: 'Plan Ready', description: 'AI has optimized your schedule for today.', time: '5m ago', isRead: false },
+    { id: '2', title: 'Welcome!', description: 'Glad to have you on DayPilot.', time: '1h ago', isRead: true }
+  ]);
 
   useEffect(() => {
-    // Update "today" once on client mount to avoid hydration mismatches
     setToday(new Date());
+    // Check system preference or saved preference
+    const isDark = document.documentElement.classList.contains('dark');
+    setIsDarkMode(isDark);
   }, []);
+
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   const addTask = (name: string) => {
     const newTask: Task = {
@@ -102,32 +140,81 @@ export default function DayPilotDashboard() {
       description: '',
     };
     setTasks([newTask, ...tasks]);
+    toast({
+      title: "Task created",
+      description: `"${name}" has been added to your list.`,
+    });
   };
 
   const updateTask = (updatedTask: Task) => {
     setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
     setEditingTask(null);
+    toast({
+      title: "Task updated",
+      description: `Changes to "${updatedTask.name}" saved successfully.`,
+    });
   };
 
   const deleteTask = (id: string) => {
+    const taskToDelete = tasks.find(t => t.id === id);
     setTasks(tasks.filter(t => t.id !== id));
+    toast({
+      variant: "destructive",
+      title: "Task deleted",
+      description: `"${taskToDelete?.name}" has been removed.`,
+    });
   };
 
   const toggleTaskComplete = (id: string) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, isCompleted: !t.isCompleted, status: t.isCompleted ? 'todo' : 'completed' } : t));
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    
+    const newStatus = !task.isCompleted;
+    setTasks(tasks.map(t => t.id === id ? { ...t, isCompleted: newStatus, status: newStatus ? 'completed' : 'todo' } : t));
+    
+    if (newStatus) {
+      toast({
+        title: "Well done!",
+        description: `You finished "${task.name}". Keep it up!`,
+      });
+      // Add a notification
+      setNotifications(prev => [{
+        id: Math.random().toString(),
+        title: 'Task Completed',
+        description: `You marked "${task.name}" as finished.`,
+        time: 'Just now',
+        isRead: false
+      }, ...prev]);
+    }
   };
 
   const handleScheduleUpdate = (scheduledTasks: Task[]) => {
     setTasks(scheduledTasks);
+    toast({
+      title: "Schedule Optimized",
+      description: "AI has re-organized your day for peak efficiency.",
+    });
   };
 
   const savePreferences = (newPrefs: UserPreferences) => {
     setPreferences(newPrefs);
+    toast({
+      title: "Settings saved",
+      description: "Your work hours and breaks have been updated.",
+    });
   };
 
   const saveProfile = (newProfile: UserProfile) => {
     setProfile(newProfile);
     setIsEditingProfile(false);
+    toast({
+      title: "Profile updated",
+      description: "Your personal details have been saved.",
+    });
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, isRead: true })));
   };
 
   const filteredTasks = tasks.filter(t => {
@@ -139,7 +226,7 @@ export default function DayPilotDashboard() {
   const categories = Array.from(new Set(tasks.map(t => t.category || 'General')));
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden text-foreground">
       {/* Sidebar Navigation */}
       <aside className="w-64 border-r bg-card hidden md:flex flex-col">
         <div className="p-6 flex items-center gap-2">
@@ -188,9 +275,14 @@ export default function DayPilotDashboard() {
           <div className="p-4 bg-muted/40 rounded-xl border border-muted">
             <p className="text-xs font-semibold mb-2">Weekly Goal</p>
             <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mb-2">
-              <div className="h-full bg-accent w-3/4 rounded-full" />
+              <div 
+                className="h-full bg-accent transition-all duration-500" 
+                style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.isCompleted).length / Math.max(tasks.length, 1)) * 100 : 0}%` }}
+              />
             </div>
-            <p className="text-[10px] text-muted-foreground">15/20 tasks completed this week</p>
+            <p className="text-[10px] text-muted-foreground">
+              {tasks.filter(t => t.isCompleted).length} tasks completed
+            </p>
           </div>
           <Button 
             variant="ghost" 
@@ -214,20 +306,50 @@ export default function DayPilotDashboard() {
               {view === 'calendar' && 'Full Schedule'}
               {view === 'settings' && 'User Settings'}
             </h2>
-            <div className="relative w-64 hidden lg:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <input 
-                placeholder="Search tasks..." 
-                className="w-full pl-10 pr-4 py-2 bg-muted/50 border border-transparent focus:border-primary/20 rounded-full text-xs focus:outline-none transition-all"
-              />
-            </div>
           </div>
 
           <div className="flex items-center gap-3">
-             <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
-               <Bell className="w-4 h-4" />
-               <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full border-2 border-background" />
+             <Button 
+               variant="ghost" 
+               size="icon" 
+               className="h-9 w-9 rounded-full"
+               onClick={toggleDarkMode}
+             >
+               {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
              </Button>
+
+             <DropdownMenu>
+               <DropdownMenuTrigger asChild>
+                 <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full">
+                   <Bell className="w-4 h-4" />
+                   {notifications.some(n => !n.isRead) && (
+                     <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full border-2 border-background" />
+                   )}
+                 </Button>
+               </DropdownMenuTrigger>
+               <DropdownMenuContent align="end" className="w-80">
+                 <DropdownMenuLabel className="flex justify-between items-center">
+                   Notifications
+                   <Button variant="ghost" size="sm" className="text-[10px] h-6 px-2" onClick={markAllAsRead}>Mark as read</Button>
+                 </DropdownMenuLabel>
+                 <DropdownMenuSeparator />
+                 <ScrollArea className="h-64">
+                   {notifications.length > 0 ? (
+                     notifications.map(n => (
+                       <DropdownMenuItem key={n.id} className="flex flex-col items-start gap-1 p-3 cursor-default">
+                         <div className="flex w-full justify-between gap-2">
+                           <span className={cn("text-xs font-bold", !n.isRead && "text-primary")}>{n.title}</span>
+                           <span className="text-[9px] text-muted-foreground shrink-0">{n.time}</span>
+                         </div>
+                         <p className="text-[11px] text-muted-foreground leading-relaxed">{n.description}</p>
+                       </DropdownMenuItem>
+                     ))
+                   ) : (
+                     <div className="p-8 text-center text-xs text-muted-foreground italic">No notifications</div>
+                   )}
+                 </ScrollArea>
+               </DropdownMenuContent>
+             </DropdownMenu>
              
              <DropdownMenu>
                <DropdownMenuTrigger asChild>
@@ -368,7 +490,7 @@ export default function DayPilotDashboard() {
                       <p className="text-[10px] text-muted-foreground mt-1">productive hours tracked</p>
                     </CardContent>
                   </Card>
-                  <Card className="bg-green-50/50 border-green-200/50">
+                  <Card className="bg-green-50/5 border-green-200/50 dark:bg-green-500/5 dark:border-green-500/20">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-xs font-bold text-green-600 flex items-center gap-2 uppercase tracking-wider">
                         <Tag className="w-4 h-4" />
@@ -516,6 +638,25 @@ export default function DayPilotDashboard() {
           {view === 'settings' && (
             <ScrollArea className="h-full">
               <div className="p-8 max-w-2xl mx-auto space-y-6">
+                <Card className="shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Appearance & Theme</CardTitle>
+                    <CardDescription>Customize how DayPilot looks on your screen.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg border">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm font-bold">Dark Mode</Label>
+                        <p className="text-xs text-muted-foreground">Toggle between light and dark themes.</p>
+                      </div>
+                      <Switch 
+                        checked={isDarkMode} 
+                        onCheckedChange={toggleDarkMode} 
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="shadow-sm">
                   <CardHeader>
                     <CardTitle className="text-lg">Work Schedule</CardTitle>
