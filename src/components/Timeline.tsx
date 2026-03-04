@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from 'react';
@@ -14,6 +15,19 @@ const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM to 8 PM
 
 export function Timeline({ tasks }: TimelineProps) {
   const scheduledTasks = tasks.filter(t => t.scheduledStartTime && t.scheduledEndTime);
+
+  const calculatePosition = (time: string) => {
+    try {
+      const parts = time.split(':');
+      if (parts.length !== 2) return 0;
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (isNaN(h) || isNaN(m)) return 0;
+      return (h - 7) * 64 + (m / 60) * 64;
+    } catch (e) {
+      return 0;
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-card rounded-xl border shadow-sm overflow-hidden">
@@ -35,11 +49,12 @@ export function Timeline({ tasks }: TimelineProps) {
           {/* Task blocks */}
           <div className="absolute inset-0 left-16">
             {scheduledTasks.map((task) => {
-              const [startH, startM] = task.scheduledStartTime!.split(':').map(Number);
-              const [endH, endM] = task.scheduledEndTime!.split(':').map(Number);
-              
-              const startOffset = (startH - 7) * 64 + (startM / 60) * 64;
-              const duration = ((endH * 60 + endM) - (startH * 60 + startM)) / 60 * 64;
+              const startPos = calculatePosition(task.scheduledStartTime!);
+              const endPos = calculatePosition(task.scheduledEndTime!);
+              const duration = Math.max(endPos - startPos, 20); // Minimum 20px height for visibility
+
+              // Ensure tasks don't render before the first hour
+              if (startPos < 0) return null;
 
               return (
                 <div
@@ -49,7 +64,7 @@ export function Timeline({ tasks }: TimelineProps) {
                     task.isCompleted ? "bg-muted text-muted-foreground" : "bg-primary/5 border-primary/20"
                   )}
                   style={{
-                    top: `${startOffset}px`,
+                    top: `${startPos}px`,
                     height: `${duration}px`,
                   }}
                 >
@@ -57,7 +72,7 @@ export function Timeline({ tasks }: TimelineProps) {
                     <span className="text-[11px] font-bold truncate leading-tight">
                       {task.name}
                     </span>
-                    <Badge variant="outline" className="text-[8px] h-3 px-1 border-primary/30">
+                    <Badge variant="outline" className="text-[8px] h-3 px-1 border-primary/30 shrink-0">
                       {task.category || 'General'}
                     </Badge>
                   </div>

@@ -32,7 +32,7 @@ const priorityColors = {
 export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardProps) {
   return (
     <Card className={cn(
-      "group relative border-l-4 transition-all hover:shadow-md",
+      "group relative border-l-4 transition-all hover:shadow-md overflow-hidden",
       task.priority === 'high' ? "border-l-primary" : "border-l-accent",
       task.isCompleted && "opacity-60"
     )}>
@@ -40,7 +40,7 @@ export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardP
         <Checkbox 
           checked={task.isCompleted} 
           onCheckedChange={() => onToggleComplete(task.id)}
-          className="mt-1"
+          className="mt-1 shrink-0"
         />
         
         <div className="flex-1 min-w-0">
@@ -51,13 +51,13 @@ export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardP
             )}>
               {task.name}
             </h4>
-            <Badge variant="outline" className={cn("text-[10px] py-0", priorityColors[task.priority])}>
+            <Badge variant="outline" className={cn("text-[10px] py-0 shrink-0", priorityColors[task.priority])}>
               {task.priority}
             </Badge>
           </div>
           
           {task.description && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+            <p className="text-xs text-muted-foreground line-clamp-3 mb-3 break-words">
               {task.description}
             </p>
           )}
@@ -70,7 +70,7 @@ export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardP
             {task.category && (
               <div className="flex items-center gap-1">
                 <Tag className="w-3 h-3" />
-                {task.category}
+                <span className="truncate max-w-[80px]">{task.category}</span>
               </div>
             )}
             {task.dueDate && (
@@ -84,7 +84,7 @@ export function TaskCard({ task, onToggleComplete, onEdit, onDelete }: TaskCardP
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
               <MoreHorizontal className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
