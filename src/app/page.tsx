@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Task, UserPreferences, Priority, UserProfile } from "@/lib/types";
 import { Timeline } from "@/components/Timeline";
 import { TaskCard } from "@/components/TaskCard";
@@ -25,7 +25,10 @@ import {
   LogOut,
   Moon,
   Sun,
-  Info
+  Info,
+  TrendingUp,
+  AlertTriangle,
+  History
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +39,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -49,6 +52,24 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
+import { 
+  ChartContainer, 
+  ChartTooltip, 
+  ChartTooltipContent, 
+  ChartLegend, 
+  ChartLegendContent 
+} from "@/components/ui/chart";
+import { 
+  Bar, 
+  BarChart, 
+  ResponsiveContainer, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  Cell, 
+  PieChart, 
+  Pie 
+} from "recharts";
 
 const INITIAL_TASKS: Task[] = [
   {
@@ -71,6 +92,26 @@ const INITIAL_TASKS: Task[] = [
     isCompleted: true,
     status: 'completed',
     category: 'Work',
+  },
+  {
+    id: '3',
+    name: 'Weekly Sync',
+    description: 'Discuss milestones with the team.',
+    priority: 'high',
+    estimatedTimeMinutes: 45,
+    isCompleted: false,
+    status: 'todo',
+    category: 'Work',
+  },
+  {
+    id: '4',
+    name: 'Gym session',
+    description: 'Cardio and strength training.',
+    priority: 'medium',
+    estimatedTimeMinutes: 90,
+    isCompleted: false,
+    status: 'todo',
+    category: 'Health',
   }
 ];
 
@@ -101,7 +142,7 @@ export default function DayPilotDashboard() {
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [activeTab, setActiveTab] = useState('all');
-  const [view, setView] = useState<'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings'>('planner');
+  const [view, setView] = useState<'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings'>('dashboard');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [today, setToday] = useState<Date | null>(null);
@@ -219,6 +260,26 @@ export default function DayPilotDashboard() {
     return true;
   });
 
+  const stats = useMemo(() => {
+    const completed = tasks.filter(t => t.isCompleted).length;
+    const total = tasks.length;
+    const highPriority = tasks.filter(t => t.priority === 'high' && !t.isCompleted).length;
+    const estimatedMinutes = tasks.filter(t => !t.isCompleted).reduce((acc, t) => acc + t.estimatedTimeMinutes, 0);
+    const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+    
+    return { completed, total, highPriority, estimatedMinutes, progress };
+  }, [tasks]);
+
+  const chartData = useMemo(() => {
+    const priorities = { high: 0, medium: 0, low: 0 };
+    tasks.forEach(t => { priorities[t.priority]++; });
+    return [
+      { name: 'High', value: priorities.high, color: 'hsl(var(--destructive))' },
+      { name: 'Medium', value: priorities.medium, color: 'hsl(var(--accent))' },
+      { name: 'Low', value: priorities.low, color: 'hsl(var(--primary))' },
+    ];
+  }, [tasks]);
+
   const categories = Array.from(new Set(tasks.map(t => t.category || 'General')));
 
   return (
@@ -273,11 +334,11 @@ export default function DayPilotDashboard() {
             <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mb-2">
               <div 
                 className="h-full bg-accent transition-all duration-500" 
-                style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.isCompleted).length / Math.max(tasks.length, 1)) * 100 : 0}%` }}
+                style={{ width: `${stats.progress}%` }}
               />
             </div>
             <p className="text-[10px] text-muted-foreground">
-              {tasks.filter(t => t.isCompleted).length} tasks completed
+              {stats.completed} tasks completed ({stats.progress}%)
             </p>
           </div>
           <Button 
@@ -424,16 +485,123 @@ export default function DayPilotDashboard() {
           {view === 'dashboard' && (
             <ScrollArea className="h-full">
               <div className="p-8 space-y-8 max-w-7xl mx-auto pb-20">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card className="bg-primary/5 border-primary/20">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <Card className="bg-primary/5 border-primary/20 shadow-sm">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-xs font-bold text-primary flex items-center gap-2 uppercase tracking-wider">
-                        <CheckCircle2 className="w-4 h-4" /> Tasks Completed
+                        <CheckCircle2 className="w-4 h-4" /> Completion Rate
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-3xl font-bold">{tasks.filter(t => t.isCompleted).length}</p>
+                      <p className="text-3xl font-bold">{stats.progress}%</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{stats.completed} / {stats.total} tasks done</p>
                     </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-destructive/5 border-destructive/20 shadow-sm">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xs font-bold text-destructive flex items-center gap-2 uppercase tracking-wider">
+                        <AlertTriangle className="w-4 h-4" /> High Priority
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold">{stats.highPriority}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Critical tasks pending</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-accent/5 border-accent/20 shadow-sm">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xs font-bold text-accent-foreground flex items-center gap-2 uppercase tracking-wider">
+                        <Clock className="w-4 h-4" /> Time Required
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold">{Math.floor(stats.estimatedMinutes / 60)}h {stats.estimatedMinutes % 60}m</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Remaining for today</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-muted/30 border-muted shadow-sm">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-xs font-bold text-muted-foreground flex items-center gap-2 uppercase tracking-wider">
+                        <TrendingUp className="w-4 h-4" /> Productivity Score
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold">Good</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">Steady pace maintained</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Charts and Details Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <Card className="lg:col-span-2 shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="text-sm font-bold">Priority Distribution</CardTitle>
+                      <CardDescription className="text-xs">Breakdown of tasks by importance</CardDescription>
+                    </CardHeader>
+                    <CardContent className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData}>
+                          <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                          <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                          <Tooltip 
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                return (
+                                  <div className="bg-card border p-2 rounded-lg shadow-lg text-xs">
+                                    <p className="font-bold">{payload[0].payload.name}</p>
+                                    <p>{payload[0].value} Tasks</p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }} 
+                          />
+                          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                            {chartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="shadow-sm">
+                    <CardHeader>
+                      <CardTitle className="text-sm font-bold flex items-center gap-2">
+                        <History className="w-4 h-4" /> Recent Activity
+                      </CardTitle>
+                      <CardDescription className="text-xs">Latest updates to your plan</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        {tasks.slice(0, 4).map((task) => (
+                          <div key={task.id} className="flex items-start gap-3">
+                            <div className={cn(
+                              "w-2 h-2 rounded-full mt-1.5 shrink-0",
+                              task.isCompleted ? "bg-green-500" : task.priority === 'high' ? "bg-destructive" : "bg-accent"
+                            )} />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold truncate">{task.name}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">
+                                {task.isCompleted ? 'Completed' : 'Pending'} • {task.category || 'General'}
+                              </p>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground shrink-0">Today</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                    <CardFooter className="pt-2">
+                      <Button variant="ghost" className="w-full text-xs h-8 text-muted-foreground" onClick={() => setView('planner')}>
+                        View all activity
+                      </Button>
+                    </CardFooter>
                   </Card>
                 </div>
               </div>
@@ -444,13 +612,41 @@ export default function DayPilotDashboard() {
             <ScrollArea className="h-full">
               <div className="p-8 pb-20 max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {categories.map(cat => (
-                    <Card key={cat} className="group hover:border-primary/40 transition-all cursor-pointer shadow-sm">
-                      <CardHeader className="pb-2">
-                        <Badge variant="secondary" className="w-fit">{cat}</Badge>
-                      </CardHeader>
-                    </Card>
-                  ))}
+                  {categories.map(cat => {
+                    const catTasks = tasks.filter(t => (t.category || 'General') === cat);
+                    const completed = catTasks.filter(t => t.isCompleted).length;
+                    const total = catTasks.length;
+                    const progress = total > 0 ? (completed / total) * 100 : 0;
+
+                    return (
+                      <Card key={cat} className="group hover:border-primary/40 transition-all cursor-pointer shadow-sm">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-center mb-1">
+                             <Badge variant="secondary" className="w-fit">{cat}</Badge>
+                             <span className="text-xs text-muted-foreground font-medium">{completed}/{total}</span>
+                          </div>
+                          <CardTitle className="text-sm font-bold">{cat} Tasks</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mb-3">
+                            <div 
+                              className="h-full bg-primary transition-all duration-500" 
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            {catTasks.slice(0, 3).map(t => (
+                              <div key={t.id} className="flex items-center gap-2">
+                                <CheckCircle2 className={cn("w-3 h-3 shrink-0", t.isCompleted ? "text-primary" : "text-muted")} />
+                                <span className={cn("text-[11px] truncate", t.isCompleted && "line-through text-muted-foreground")}>{t.name}</span>
+                              </div>
+                            ))}
+                            {total > 3 && <p className="text-[10px] text-muted-foreground italic pl-5">+{total - 3} more...</p>}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </div>
             </ScrollArea>
@@ -460,7 +656,36 @@ export default function DayPilotDashboard() {
             <ScrollArea className="h-full">
               <div className="p-8 pb-20 max-w-7xl mx-auto">
                 <div className="bg-card border rounded-2xl p-8 flex flex-col lg:flex-row gap-8 shadow-sm">
-                  <Calendar mode="single" selected={today || undefined} className="border rounded-xl shadow-sm bg-card" />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                      <CalendarIcon className="w-5 h-5 text-primary" /> Full Calendar
+                    </h3>
+                    <Calendar 
+                      mode="single" 
+                      selected={today || undefined} 
+                      onSelect={(date) => date && setToday(date)}
+                      className="border rounded-xl shadow-sm bg-card w-full" 
+                    />
+                  </div>
+                  <div className="w-full lg:w-80 shrink-0">
+                    <h4 className="text-sm font-bold mb-4">Upcoming Deadlines</h4>
+                    <div className="space-y-4">
+                      {tasks.filter(t => !t.isCompleted && t.dueDate).map(task => (
+                        <div key={task.id} className="p-3 bg-muted/30 rounded-lg border border-muted flex flex-col gap-1">
+                          <span className="text-xs font-bold truncate">{task.name}</span>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                            <CalendarIcon className="w-3 h-3" />
+                            {task.dueDate}
+                          </div>
+                        </div>
+                      ))}
+                      {tasks.filter(t => !t.isCompleted && t.dueDate).length === 0 && (
+                        <div className="text-center py-8 text-xs text-muted-foreground italic">
+                          No upcoming deadlines
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </ScrollArea>
@@ -469,35 +694,101 @@ export default function DayPilotDashboard() {
           {view === 'settings' && (
             <ScrollArea className="h-full">
               <div className="p-8 max-w-2xl mx-auto space-y-6 pb-20">
-                <Card>
+                <Card className="shadow-sm">
                   <CardHeader>
-                    <CardTitle>Appearance</CardTitle>
+                    <CardTitle className="text-lg">Profile Settings</CardTitle>
+                    <CardDescription className="text-xs">Update your personal information</CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex items-center gap-6">
+                    <Avatar className="h-16 w-16 border-2 border-primary/20">
+                      <AvatarImage src={profile.avatarUrl} />
+                      <AvatarFallback>{profile.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1">
+                      <p className="font-bold">{profile.name}</p>
+                      <p className="text-xs text-muted-foreground">{profile.email}</p>
+                      <Button variant="outline" size="sm" className="mt-2 h-8 text-xs" onClick={() => setIsEditingProfile(true)}>
+                        Change Profile
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Appearance</CardTitle>
+                    <CardDescription className="text-xs">Customize how DayPilot looks</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between p-4 bg-muted/20 rounded-lg border">
-                      <Label>Dark Mode</Label>
+                      <div className="flex items-center gap-3">
+                        {isDarkMode ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                        <Label className="text-sm">Dark Mode</Label>
+                      </div>
                       <Switch checked={isDarkMode} onCheckedChange={toggleDarkMode} />
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
+
+                <Card className="shadow-sm">
                    <CardHeader>
-                    <CardTitle>Work Schedule</CardTitle>
+                    <CardTitle className="text-lg text-primary">Work Schedule</CardTitle>
+                    <CardDescription className="text-xs">Used by AI to optimize your daily planner</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label>Start</Label>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Start of Day</Label>
                         <Input type="time" value={preferences.workDayStart} onChange={(e) => setPreferences({...preferences, workDayStart: e.target.value})} />
                       </div>
                       <div className="space-y-2">
-                        <Label>End</Label>
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">End of Day</Label>
                         <Input type="time" value={preferences.workDayEnd} onChange={(e) => setPreferences({...preferences, workDayEnd: e.target.value})} />
                       </div>
                     </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Preferred Breaks</Label>
+                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => {
+                          const newBreaks = [...preferences.preferredBreaks, { start: "12:00", durationMinutes: 30 }];
+                          setPreferences({...preferences, preferredBreaks: newBreaks});
+                        }}>
+                          <Plus className="w-3 h-3 mr-1" /> Add
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {preferences.preferredBreaks.map((breakItem, idx) => (
+                          <div key={idx} className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg border">
+                            <Input type="time" value={breakItem.start} className="h-8 text-xs w-32" onChange={(e) => {
+                              const newBreaks = [...preferences.preferredBreaks];
+                              newBreaks[idx].start = e.target.value;
+                              setPreferences({...preferences, preferredBreaks: newBreaks});
+                            }} />
+                            <Input type="number" value={breakItem.durationMinutes} className="h-8 text-xs w-20" onChange={(e) => {
+                              const newBreaks = [...preferences.preferredBreaks];
+                              newBreaks[idx].durationMinutes = parseInt(e.target.value);
+                              setPreferences({...preferences, preferredBreaks: newBreaks});
+                            }} />
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold">min</span>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto text-destructive" onClick={() => {
+                              const newBreaks = preferences.preferredBreaks.filter((_, i) => i !== idx);
+                              setPreferences({...preferences, preferredBreaks: newBreaks});
+                            }}>
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ))}
+                        {preferences.preferredBreaks.length === 0 && (
+                          <div className="text-center p-4 border border-dashed rounded-lg text-xs text-muted-foreground italic">
+                            No breaks scheduled
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </CardContent>
-                  <CardFooter>
-                    <Button onClick={() => savePreferences(preferences)}>Save Preferences</Button>
+                  <CardFooter className="bg-muted/10">
+                    <Button onClick={() => savePreferences(preferences)} className="w-full">Save Work Schedule</Button>
                   </CardFooter>
                 </Card>
               </div>
@@ -511,22 +802,46 @@ export default function DayPilotDashboard() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Task</DialogTitle>
+            <DialogDescription className="text-xs">Modify task details and scheduling constraints.</DialogDescription>
           </DialogHeader>
           {editingTask && (
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name" className="text-xs">Task Name</Label>
                 <Input id="name" value={editingTask.name || ''} onChange={(e) => setEditingTask({...editingTask, name: e.target.value})} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" value={editingTask.description || ''} onChange={(e) => setEditingTask({...editingTask, description: e.target.value})} />
+                <Label htmlFor="description" className="text-xs">Description</Label>
+                <Textarea id="description" className="text-xs" value={editingTask.description || ''} onChange={(e) => setEditingTask({...editingTask, description: e.target.value})} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="grid gap-2">
+                  <Label className="text-xs">Priority</Label>
+                  <Select value={editingTask.priority} onValueChange={(val: Priority) => setEditingTask({...editingTask, priority: val})}>
+                    <SelectTrigger className="text-xs">
+                      <SelectValue placeholder="Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-xs">Duration (min)</Label>
+                  <Input type="number" value={editingTask.estimatedTimeMinutes} onChange={(e) => setEditingTask({...editingTask, estimatedTimeMinutes: parseInt(e.target.value)})} />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-xs">Category</Label>
+                <Input value={editingTask.category || ''} onChange={(e) => setEditingTask({...editingTask, category: e.target.value})} />
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingTask(null)}>Cancel</Button>
-            <Button onClick={() => editingTask && updateTask(editingTask)}>Save</Button>
+            <Button onClick={() => editingTask && updateTask(editingTask)}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -534,16 +849,29 @@ export default function DayPilotDashboard() {
       <Dialog open={isEditingProfile} onOpenChange={setIsEditingProfile}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogTitle>Update Your Profile</DialogTitle>
+            <DialogDescription className="text-xs">Personalize your DayPilot experience.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label>Name</Label>
+              <Label className="text-xs">Full Name</Label>
               <Input value={profile.name} onChange={(e) => setProfile({...profile, name: e.target.value})} />
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-xs">Email Address</Label>
+              <Input type="email" value={profile.email} onChange={(e) => setProfile({...profile, email: e.target.value})} />
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-xs">Profile Bio</Label>
+              <Textarea className="text-xs" value={profile.bio || ''} onChange={(e) => setProfile({...profile, bio: e.target.value})} />
+            </div>
+            <div className="grid gap-2">
+              <Label className="text-xs">Avatar URL</Label>
+              <Input value={profile.avatarUrl} onChange={(e) => setProfile({...profile, avatarUrl: e.target.value})} />
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={() => saveProfile(profile)}>Save Profile</Button>
+            <Button onClick={() => saveProfile(profile)}>Save Profile Info</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
