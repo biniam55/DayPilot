@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -25,8 +26,7 @@ import {
   TrendingUp,
   AlertTriangle,
   History,
-  Menu,
-  Loader2
+  Menu
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +37,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter, 
+  DialogDescription 
+} from "@/components/ui/dialog";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -145,8 +152,10 @@ export default function DayPilotDashboard() {
 
   useEffect(() => {
     setToday(new Date());
-    const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
-    setIsDarkMode(isDark);
+    if (typeof document !== 'undefined') {
+      const isDark = document.documentElement.classList.contains('dark');
+      setIsDarkMode(isDark);
+    }
   }, []);
 
   const toggleDarkMode = () => {
@@ -210,13 +219,6 @@ export default function DayPilotDashboard() {
         title: "Task Completed",
         description: `Great job on "${task.name}"!`,
       });
-      setNotifications(prev => [{
-        id: Math.random().toString(36).substring(2, 11),
-        title: 'Task Completed',
-        description: `You finished "${task.name}".`,
-        time: 'Just now',
-        isRead: false
-      }, ...prev]);
     }
   };
 
@@ -442,7 +444,7 @@ export default function DayPilotDashboard() {
                         <TabsTrigger value="completed" className="text-[10px] sm:text-xs px-2 sm:px-4 rounded-md">Done</TabsTrigger>
                       </TabsList>
                       <div className="lg:hidden">
-                        <Dialog>
+                        <Sheet>
                           <SheetTrigger asChild>
                             <Button variant="outline" size="sm" className="h-8 text-[10px] sm:text-xs gap-1">
                               <TrendingUp className="w-3 h-3" />
@@ -456,7 +458,7 @@ export default function DayPilotDashboard() {
                               onScheduleUpdate={handleScheduleUpdate} 
                             />
                           </SheetContent>
-                        </Dialog>
+                        </Sheet>
                       </div>
                     </div>
 
@@ -499,7 +501,6 @@ export default function DayPilotDashboard() {
           {view === 'dashboard' && (
             <ScrollArea className="h-full">
               <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto pb-20">
-                {/* Stats Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                   <Card className="bg-primary/5 border-primary/20 shadow-sm">
                     <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
@@ -550,7 +551,6 @@ export default function DayPilotDashboard() {
                   </Card>
                 </div>
 
-                {/* Charts and Details Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
                   <Card className="lg:col-span-2 shadow-sm">
                     <CardHeader className="p-4 sm:p-6">
@@ -655,7 +655,6 @@ export default function DayPilotDashboard() {
                                 <span className={cn("text-[10px] sm:text-[11px] truncate", t.isCompleted && "line-through text-muted-foreground")}>{t.name}</span>
                               </div>
                             ))}
-                            {total > 3 && <p className="text-[9px] text-muted-foreground italic pl-5">+{total - 3} more...</p>}
                           </div>
                         </CardContent>
                       </Card>
@@ -681,25 +680,6 @@ export default function DayPilotDashboard() {
                         onSelect={(date) => date && setToday(date)}
                         className="border rounded-xl shadow-sm bg-card max-w-full" 
                       />
-                    </div>
-                  </div>
-                  <div className="w-full lg:w-80 shrink-0">
-                    <h4 className="text-xs sm:text-sm font-bold mb-4">Upcoming Deadlines</h4>
-                    <div className="space-y-4">
-                      {tasks.filter(t => !t.isCompleted && t.dueDate).map(task => (
-                        <div key={task.id} className="p-3 bg-muted/30 rounded-lg border border-muted flex flex-col gap-1">
-                          <span className="text-[11px] sm:text-xs font-bold truncate">{task.name}</span>
-                          <div className="flex items-center gap-2 text-[9px] sm:text-[10px] text-muted-foreground">
-                            <CalendarIcon className="w-3 h-3" />
-                            {task.dueDate}
-                          </div>
-                        </div>
-                      ))}
-                      {tasks.filter(t => !t.isCompleted && t.dueDate).length === 0 && (
-                        <div className="text-center py-8 text-[10px] text-muted-foreground italic">
-                          No upcoming deadlines
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -762,46 +742,6 @@ export default function DayPilotDashboard() {
                         <Input type="time" className="text-xs" value={preferences.workDayEnd} onChange={(e) => setPreferences({...preferences, workDayEnd: e.target.value})} />
                       </div>
                     </div>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <Label className="text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground">Preferred Breaks</Label>
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-[10px]" onClick={() => {
-                          const newBreaks = [...preferences.preferredBreaks, { start: "12:00", durationMinutes: 30 }];
-                          setPreferences({...preferences, preferredBreaks: newBreaks});
-                        }}>
-                          <Plus className="w-3 h-3 mr-1" /> Add
-                        </Button>
-                      </div>
-                      <div className="space-y-2">
-                        {preferences.preferredBreaks.map((breakItem, idx) => (
-                          <div key={idx} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/30 rounded-lg border">
-                            <Input type="time" value={breakItem.start} className="h-8 text-[10px] w-24" onChange={(e) => {
-                              const newBreaks = [...preferences.preferredBreaks];
-                              newBreaks[idx].start = e.target.value;
-                              setPreferences({...preferences, preferredBreaks: newBreaks});
-                            }} />
-                            <Input type="number" value={breakItem.durationMinutes} className="h-8 text-[10px] w-16 sm:w-20" onChange={(e) => {
-                              const newBreaks = [...preferences.preferredBreaks];
-                              newBreaks[idx].durationMinutes = parseInt(e.target.value);
-                              setPreferences({...preferences, preferredBreaks: newBreaks});
-                            }} />
-                            <span className="text-[8px] sm:text-[10px] text-muted-foreground uppercase font-bold">min</span>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto text-destructive" onClick={() => {
-                              const newBreaks = preferences.preferredBreaks.filter((_, i) => i !== idx);
-                              setPreferences({...preferences, preferredBreaks: newBreaks});
-                            }}>
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        ))}
-                        {preferences.preferredBreaks.length === 0 && (
-                          <div className="text-center p-4 border border-dashed rounded-lg text-[10px] text-muted-foreground italic">
-                            No breaks scheduled
-                          </div>
-                        )}
-                      </div>
-                    </div>
                   </CardContent>
                   <CardFooter className="bg-muted/10 p-4 sm:p-6">
                     <Button onClick={() => savePreferences(preferences)} className="w-full text-xs sm:text-sm">Save Work Schedule</Button>
@@ -846,12 +786,8 @@ export default function DayPilotDashboard() {
                 </div>
                 <div className="grid gap-2">
                   <Label className="text-[11px] sm:text-xs">Duration (min)</Label>
-                  <Input type="number" className="text-xs h-9" value={editingTask.estimatedTimeMinutes} onChange={(e) => setEditingTask({...editingTask, estimatedTimeMinutes: parseInt(e.target.value)})} />
+                  <Input type="number" className="text-xs h-9" value={editingTask.estimatedTimeMinutes} onChange={(e) => setEditingTask({...editingTask, estimatedTimeMinutes: parseInt(e.target.value) || 0})} />
                 </div>
-              </div>
-              <div className="grid gap-2">
-                <Label className="text-[11px] sm:text-xs">Category</Label>
-                <Input className="text-xs" value={editingTask.category || ''} onChange={(e) => setEditingTask({...editingTask, category: e.target.value})} />
               </div>
             </div>
           )}
@@ -880,10 +816,6 @@ export default function DayPilotDashboard() {
             <div className="grid gap-2">
               <Label className="text-[11px] sm:text-xs">Profile Bio</Label>
               <Textarea className="text-xs" value={profile.bio || ''} onChange={(e) => setProfile({...profile, bio: e.target.value})} />
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-[11px] sm:text-xs">Avatar URL</Label>
-              <Input className="text-xs" value={profile.avatarUrl} onChange={(e) => setProfile({...profile, avatarUrl: e.target.value})} />
             </div>
           </div>
           <DialogFooter>
