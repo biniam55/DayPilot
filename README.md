@@ -8,6 +8,7 @@ DayPilot is a modern, high-performance daily schedule assistant built to help us
 - **React 19**: Latest UI patterns.
 - **Tailwind CSS & ShadCN UI**: Beautiful, responsive design.
 - **Genkit 1.x**: AI integration with Gemini.
+- **Firebase**: Backend services (Auth & Firestore).
 
 ## 📂 Project Structure
 
@@ -19,23 +20,47 @@ DayPilot is a modern, high-performance daily schedule assistant built to help us
 
 ## 🛠 Local Setup (Cursor)
 
+1.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
+2.  **Environment Setup**:
+    - Create a `.env` file in the root.
+    - Add your `GOOGLE_GENAI_API_KEY`.
+3.  **Run Development Server**:
+    ```bash
+    npm run dev
+    ```
+4.  **Access the App**:
+    - Open `http://localhost:9002` in your browser.
+
+## 🔗 Connecting to a Remote Git Repository (GitHub)
+
+To push this project to your own GitHub account:
+
 1.  **Initialize Git**:
     ```bash
     git init
     ```
-2.  **Install Dependencies**:
+2.  **Add all files**:
     ```bash
-    npm install
+    git add .
     ```
-3.  **Environment Setup**:
-    - Create a `.env` file in the root.
-    - Add your `GOOGLE_GENAI_API_KEY`.
-4.  **Run Development Server**:
+3.  **Create initial commit**:
     ```bash
-    npm run dev
+    git commit -m "Initial commit of DayPilot AI"
     ```
-5.  **Access the App**:
-    - Open `http://localhost:9002` in your browser.
+4.  **Add Remote Origin**:
+    - Create a new repository on GitHub.
+    - Copy the repository URL (e.g., `https://github.com/your-username/daypilot-ai.git`).
+    ```bash
+    git remote add origin <YOUR_REPOSITORY_URL>
+    ```
+5.  **Push to GitHub**:
+    ```bash
+    git branch -M main
+    git push -u origin main
+    ```
 
 ## ✨ Core Features
 - **AI Assistant**: Automated daily schedule optimization.
