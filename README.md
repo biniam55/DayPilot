@@ -9,6 +9,14 @@ DayPilot is a modern, high-performance daily schedule assistant built to help us
 - **Tailwind CSS & ShadCN UI**: Beautiful, responsive design.
 - **Genkit 1.x**: AI integration with Gemini.
 
+## 📂 Project Structure
+
+- `src/app/`: App router pages and layouts.
+- `src/components/`: Reusable UI components (Task cards, Timeline, etc.).
+- `src/ai/`: AI logic and Genkit flows.
+- `src/lib/`: Types and utility functions.
+- `.next/`: **(Generated)** Compiled build artifacts. Do not edit or commit to Git.
+
 ## 🛠 Local Setup (Cursor)
 
 1.  **Initialize Git**:
@@ -21,32 +29,13 @@ DayPilot is a modern, high-performance daily schedule assistant built to help us
     ```
 3.  **Environment Setup**:
     - Create a `.env` file in the root.
-    - Add your `GOOGLE_GENAI_API_KEY` and Firebase keys.
+    - Add your `GOOGLE_GENAI_API_KEY`.
 4.  **Run Development Server**:
     ```bash
     npm run dev
     ```
 5.  **Access the App**:
     - Open `http://localhost:9002` in your browser.
-
-## 📦 Pushing to GitHub
-
-1.  **Stage Files**:
-    ```bash
-    git add .
-    ```
-2.  **Commit**:
-    ```bash
-    git commit -m "Finalize DayPilot AI project"
-    ```
-3.  **Create Repository**:
-    - Create a new repository on [GitHub](https://github.com/new).
-4.  **Push**:
-    ```bash
-    git remote add origin YOUR_GITHUB_REPO_URL
-    git branch -M main
-    git push -u origin main
-    ```
 
 ## ✨ Core Features
 - **AI Assistant**: Automated daily schedule optimization.
