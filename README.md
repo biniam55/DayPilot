@@ -34,33 +34,30 @@ DayPilot is a modern, high-performance daily schedule assistant built to help us
 4.  **Access the App**:
     - Open `http://localhost:9002` in your browser.
 
-## 🔗 Connecting to a Remote Git Repository (GitHub)
+## 🔗 Connecting to GitHub (Remote Repository)
 
-To push this project to your own GitHub account:
+To push this project to your GitHub account using a **Personal Access Token (PAT)**:
 
 1.  **Initialize Git**:
     ```bash
     git init
-    ```
-2.  **Add all files**:
-    ```bash
     git add .
-    ```
-3.  **Create initial commit**:
-    ```bash
     git commit -m "Initial commit of DayPilot AI"
     ```
-4.  **Add Remote Origin**:
-    - Create a new repository on GitHub.
-    - Copy the repository URL (e.g., `https://github.com/your-username/daypilot-ai.git`).
+2.  **Create a New Repo**:
+    - Go to [GitHub](https://github.com/new) and create a repository (e.g., `daypilot-ai`).
+3.  **Add Remote with Token**:
+    - Replace `<YOUR_TOKEN>` with your PAT and `<USERNAME>` with your GitHub username.
     ```bash
-    git remote add origin <YOUR_REPOSITORY_URL>
+    git remote add origin https://<YOUR_TOKEN>@github.com/<USERNAME>/daypilot-ai.git
     ```
-5.  **Push to GitHub**:
+4.  **Push to GitHub**:
     ```bash
     git branch -M main
     git push -u origin main
     ```
+
+> **Security Note**: Never share your Personal Access Token or commit it directly into your code files.
 
 ## ✨ Core Features
 - **AI Assistant**: Automated daily schedule optimization.
