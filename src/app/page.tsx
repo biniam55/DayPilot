@@ -1,4 +1,8 @@
 "use client"
+/**
+ * @fileOverview The main entry point for the DayPilot dashboard.
+ * Manages view state, task CRUD operations, and coordinates with AI services.
+ */
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Task, UserPreferences, Priority, UserProfile } from "@/lib/types";
