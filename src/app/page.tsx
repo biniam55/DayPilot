@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -17,7 +16,6 @@ import {
   Bell, 
   CheckCircle2, 
   Clock, 
-  Trash2, 
   Plus, 
   User, 
   LogOut,
