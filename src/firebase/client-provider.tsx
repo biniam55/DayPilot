@@ -18,7 +18,13 @@ export function FirebaseClientProvider({ children }: { children: React.ReactNode
     setInstances(initializeFirebase());
   }, []);
 
-  if (!instances) return null;
+  if (!instances) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <FirebaseProvider app={instances.app} db={instances.db} auth={instances.auth}>

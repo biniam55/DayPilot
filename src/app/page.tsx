@@ -4,7 +4,7 @@
  * Manages view state, task CRUD operations, and coordinates with AI services.
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Task, UserPreferences, Priority, UserProfile } from "@/lib/types";
 import { Timeline } from "@/components/Timeline";
 import { TaskCard } from "@/components/TaskCard";
@@ -55,7 +55,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -161,20 +161,22 @@ export default function DayPilotDashboard() {
   }, []);
 
   const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    if (typeof document !== 'undefined') {
-      if (newMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
+    setIsDarkMode(prev => {
+      const newMode = !prev;
+      if (typeof document !== 'undefined') {
+        if (newMode) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
       }
-    }
+      return newMode;
+    });
   };
 
-  const addTask = (name: string) => {
+  const addTask = useCallback((name: string) => {
     const newTask: Task = {
-      id: Math.random().toString(36).substring(2, 11),
+      id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       name,
       priority: 'medium',
       estimatedTimeMinutes: 30,
@@ -188,7 +190,7 @@ export default function DayPilotDashboard() {
       title: "Task created",
       description: `"${name}" has been added.`,
     });
-  };
+  }, [toast]);
 
   const updateTask = (updatedTask: Task) => {
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
@@ -209,7 +211,7 @@ export default function DayPilotDashboard() {
     });
   };
 
-  const toggleTaskComplete = (id: string) => {
+  const toggleTaskComplete = useCallback((id: string) => {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
     
@@ -222,7 +224,7 @@ export default function DayPilotDashboard() {
         description: `Great job on "${task.name}"!`,
       });
     }
-  };
+  }, [tasks, toast]);
 
   const handleScheduleUpdate = (scheduledTasks: Task[]) => {
     setTasks(scheduledTasks);
@@ -354,6 +356,8 @@ export default function DayPilotDashboard() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64 bg-card border-r">
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <SheetDescription className="sr-only">Main navigation menu for DayPilot</SheetDescription>
                 <NavContent />
               </SheetContent>
             </Sheet>
@@ -454,6 +458,8 @@ export default function DayPilotDashboard() {
                             </Button>
                           </SheetTrigger>
                           <SheetContent side="right" className="w-full sm:w-[400px] p-6">
+                            <SheetTitle className="sr-only">AI Schedule Assistant</SheetTitle>
+                            <SheetDescription className="sr-only">AI-powered schedule optimization</SheetDescription>
                              <AIScheduleAssistant 
                               tasks={tasks} 
                               preferences={preferences} 
