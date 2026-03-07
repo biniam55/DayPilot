@@ -17,7 +17,7 @@ interface DashboardViewProps {
     progress: number;
   };
   chartData: Array<{ name: string; value: number; color: string }>;
-  onNavigate: (view: string) => void;
+  onNavigate: (view: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings') => void;
 }
 
 const StatCard = memo(({ 

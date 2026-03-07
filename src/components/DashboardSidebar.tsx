@@ -4,17 +4,17 @@ import { LayoutDashboard, Compass, ListTodo, Calendar as CalendarIcon, Settings 
 import { cn } from "@/lib/utils";
 
 interface DashboardSidebarProps {
-  view: string;
+  view: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings';
   stats: {
     completed: number;
     progress: number;
   };
-  onViewChange: (view: string) => void;
+  onViewChange: (view: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings') => void;
   onMobileMenuClose?: () => void;
 }
 
 export function DashboardSidebar({ view, stats, onViewChange, onMobileMenuClose }: DashboardSidebarProps) {
-  const handleViewChange = (newView: string) => {
+  const handleViewChange = (newView: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings') => {
     onViewChange(newView);
     onMobileMenuClose?.();
   };
@@ -30,10 +30,10 @@ export function DashboardSidebar({ view, stats, onViewChange, onMobileMenuClose 
 
       <nav className="flex-1 px-4 space-y-2 py-4">
         {[
-          { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-          { id: 'planner', icon: Compass, label: 'My Planner' },
-          { id: 'categories', icon: ListTodo, label: 'Categories' },
-          { id: 'calendar', icon: CalendarIcon, label: 'Calendar' }
+          { id: 'dashboard' as const, icon: LayoutDashboard, label: 'Dashboard' },
+          { id: 'planner' as const, icon: Compass, label: 'My Planner' },
+          { id: 'categories' as const, icon: ListTodo, label: 'Categories' },
+          { id: 'calendar' as const, icon: CalendarIcon, label: 'Calendar' }
         ].map((item) => (
           <Button 
             key={item.id}
