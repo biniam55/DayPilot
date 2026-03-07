@@ -5,7 +5,6 @@ import { useDashboardState } from "@/hooks/useDashboardState";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { UpdateBanner } from "@/components/UpdateBanner";
 import { UpdateTestButton } from "@/components/UpdateTestButton";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -62,21 +61,6 @@ export default function DayPilotDashboard() {
     saveProfile,
   } = useDashboardState();
 
-  const { newVersionAvailable, reloadApp, dismissUpdate } = useVersionCheck();
-  const [showUpdateBanner, setShowUpdateBanner] = useState(false);
-
-  // Show banner when update is available
-  React.useEffect(() => {
-    if (newVersionAvailable) {
-      setShowUpdateBanner(true);
-    }
-  }, [newVersionAvailable]);
-
-  const handleDismissUpdate = () => {
-    setShowUpdateBanner(false);
-    dismissUpdate();
-  };
-
   const handleViewChange = (newView: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings') => {
     setView(newView);
   };
@@ -92,13 +76,6 @@ export default function DayPilotDashboard() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden text-foreground">
-      {/* Update Banner */}
-      <UpdateBanner 
-        show={showUpdateBanner} 
-        onUpdate={reloadApp} 
-        onDismiss={handleDismissUpdate}
-      />
-      
       {/* Test Button - Remove in production */}
       <UpdateTestButton />
 

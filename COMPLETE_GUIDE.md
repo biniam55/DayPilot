@@ -224,10 +224,11 @@ If longer: Check internet, try fewer tasks, refresh page
 ### How It Works
 
 Automatically notifies users when new version is available:
-- Update banner at top
-- Notification in bell icon
-- Toast message
-- Checks every 5 minutes
+- Notification appears in bell icon (top-right)
+- Red dot indicator on bell when unread
+- Toast message on detection
+- Click notification to update instantly
+- Checks every 2 minutes
 
 ### Deploying Updates
 
