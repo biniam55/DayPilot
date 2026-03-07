@@ -98,6 +98,24 @@ export function SettingsView({
             <Button onClick={onSavePreferences} className="w-full text-xs sm:text-sm">Save Work Schedule</Button>
           </CardFooter>
         </Card>
+        <Card className="shadow-sm">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">About</CardTitle>
+            <CardDescription className="text-[10px] sm:text-xs">App information and version</CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 space-y-4">
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-muted/20 rounded-lg border">
+              <div>
+                <Label className="text-xs sm:text-sm">App Version</Label>
+                <p className="text-[10px] text-muted-foreground mt-1">DayPilot v1.0.2</p>
+              </div>
+            </div>
+            <div className="text-[10px] text-muted-foreground text-center">
+              <p>Made with ❤️ for productivity</p>
+              <p className="mt-1">© 2024 DayPilot</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </ScrollArea>
   );
