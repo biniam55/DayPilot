@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Task, UserPreferences, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useVersionCheck } from "@/hooks/useVersionCheck";
 import { INITIAL_TASKS, DEFAULT_PREFERENCES, DEFAULT_PROFILE, INITIAL_NOTIFICATIONS } from "@/lib/constants";
 
 interface Notification {
@@ -10,10 +11,14 @@ interface Notification {
   description: string;
   time: string;
   isRead: boolean;
+  type?: 'info' | 'update' | 'success';
+  action?: () => void;
+  actionLabel?: string;
 }
 
 export function useDashboardState() {
   const { toast } = useToast();
+  const { newVersionAvailable, reloadApp } = useVersionCheck();
   const [tasks, setTasks] = useLocalStorage<Task[]>('daypilot-tasks', INITIAL_TASKS);
   const [preferences, setPreferences] = useLocalStorage<UserPreferences>('daypilot-preferences', DEFAULT_PREFERENCES);
   const [profile, setProfile] = useLocalStorage<UserProfile>('daypilot-profile', DEFAULT_PROFILE);
@@ -25,6 +30,35 @@ export function useDashboardState() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+
+  // Add update notification when new version is available
+  useEffect(() => {
+    if (newVersionAvailable) {
+      const updateNotification: Notification = {
+        id: 'update-available',
+        title: '🎉 Update Available',
+        description: 'A new version of DayPilot is ready. Tap to update now!',
+        time: 'Just now',
+        isRead: false,
+        type: 'update',
+        action: reloadApp,
+        actionLabel: 'Update Now'
+      };
+
+      setNotifications(prev => {
+        // Check if update notification already exists
+        const hasUpdate = prev.some(n => n.id === 'update-available');
+        if (hasUpdate) return prev;
+        return [updateNotification, ...prev];
+      });
+
+      toast({
+        title: "Update Available",
+        description: "A new version is ready. Check notifications to update!",
+        duration: 5000,
+      });
+    }
+  }, [newVersionAvailable, reloadApp, toast]);
 
   useEffect(() => {
     setToday(new Date());

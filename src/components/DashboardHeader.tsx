@@ -21,6 +21,9 @@ interface Notification {
   description: string;
   time: string;
   isRead: boolean;
+  type?: 'info' | 'update' | 'success';
+  action?: () => void;
+  actionLabel?: string;
 }
 
 interface DashboardHeaderProps {
@@ -94,12 +97,21 @@ export function DashboardHeader({
             <ScrollArea className="h-64">
               {notifications.length > 0 ? (
                 notifications.map(n => (
-                  <DropdownMenuItem key={n.id} className="flex flex-col items-start gap-1 p-3 cursor-default">
+                  <DropdownMenuItem 
+                    key={n.id} 
+                    className="flex flex-col items-start gap-1 p-3 cursor-pointer hover:bg-accent"
+                    onClick={n.action}
+                  >
                     <div className="flex w-full justify-between gap-2">
                       <span className={cn("text-xs font-bold", !n.isRead && "text-primary")}>{n.title}</span>
                       <span className="text-[9px] text-muted-foreground shrink-0">{n.time}</span>
                     </div>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">{n.description}</p>
+                    {n.actionLabel && (
+                      <button className="text-[10px] text-primary font-semibold mt-1 hover:underline">
+                        {n.actionLabel}
+                      </button>
+                    )}
                   </DropdownMenuItem>
                 ))
               ) : (

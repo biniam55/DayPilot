@@ -1,9 +1,11 @@
 "use client"
 
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 import { useDashboardState } from "@/hooks/useDashboardState";
+import { useVersionCheck } from "@/hooks/useVersionCheck";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
+import { UpdateBanner } from "@/components/UpdateBanner";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Lazy load view components
@@ -59,6 +61,21 @@ export default function DayPilotDashboard() {
     saveProfile,
   } = useDashboardState();
 
+  const { newVersionAvailable, reloadApp, dismissUpdate } = useVersionCheck();
+  const [showUpdateBanner, setShowUpdateBanner] = useState(false);
+
+  // Show banner when update is available
+  React.useEffect(() => {
+    if (newVersionAvailable) {
+      setShowUpdateBanner(true);
+    }
+  }, [newVersionAvailable]);
+
+  const handleDismissUpdate = () => {
+    setShowUpdateBanner(false);
+    dismissUpdate();
+  };
+
   const handleViewChange = (newView: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings') => {
     setView(newView);
   };
@@ -74,6 +91,13 @@ export default function DayPilotDashboard() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden text-foreground">
+      {/* Update Banner */}
+      <UpdateBanner 
+        show={showUpdateBanner} 
+        onUpdate={reloadApp} 
+        onDismiss={handleDismissUpdate}
+      />
+
       {/* Sidebar Navigation - Desktop */}
       <aside className="w-64 border-r bg-card hidden md:flex flex-col shrink-0">
         {navContent}
