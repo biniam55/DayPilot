@@ -1,16 +1,30 @@
 "use client"
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { useDashboardState } from "@/hooks/useDashboardState";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { DashboardView } from "@/components/DashboardView";
-import { PlannerView } from "@/components/PlannerView";
-import { CategoriesView } from "@/components/CategoriesView";
-import { CalendarView } from "@/components/CalendarView";
-import { SettingsView } from "@/components/SettingsView";
-import { TaskEditDialog } from "@/components/TaskEditDialog";
-import { ProfileEditDialog } from "@/components/ProfileEditDialog";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load view components
+const DashboardView = lazy(() => import("@/components/DashboardView").then(m => ({ default: m.DashboardView })));
+const PlannerView = lazy(() => import("@/components/PlannerView").then(m => ({ default: m.PlannerView })));
+const CategoriesView = lazy(() => import("@/components/CategoriesView").then(m => ({ default: m.CategoriesView })));
+const CalendarView = lazy(() => import("@/components/CalendarView").then(m => ({ default: m.CalendarView })));
+const SettingsView = lazy(() => import("@/components/SettingsView").then(m => ({ default: m.SettingsView })));
+const TaskEditDialog = lazy(() => import("@/components/TaskEditDialog").then(m => ({ default: m.TaskEditDialog })));
+const ProfileEditDialog = lazy(() => import("@/components/ProfileEditDialog").then(m => ({ default: m.ProfileEditDialog })));
+
+const ViewSkeleton = () => (
+  <div className="p-8 space-y-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {[...Array(4)].map((_, i) => (
+        <Skeleton key={i} className="h-32 w-full" />
+      ))}
+    </div>
+    <Skeleton className="h-64 w-full" />
+  </div>
+);
 
 export default function DayPilotDashboard() {
   const {
@@ -76,69 +90,79 @@ export default function DayPilotDashboard() {
         />
 
         <div className="flex-1 min-h-0 overflow-hidden relative">
-          {view === 'planner' && (
-            <PlannerView
-              tasks={tasks}
-              preferences={preferences}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              onAddTask={addTask}
-              onToggleComplete={toggleTaskComplete}
-              onEditTask={setEditingTask}
-              onDeleteTask={deleteTask}
-              onScheduleUpdate={handleScheduleUpdate}
-            />
-          )}
+          <Suspense fallback={<ViewSkeleton />}>
+            {view === 'planner' && (
+              <div className="h-full w-full overflow-hidden">
+                <PlannerView
+                  tasks={tasks}
+                  preferences={preferences}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  onAddTask={addTask}
+                  onToggleComplete={toggleTaskComplete}
+                  onEditTask={setEditingTask}
+                  onDeleteTask={deleteTask}
+                  onScheduleUpdate={handleScheduleUpdate}
+                />
+              </div>
+            )}
 
-          {view === 'dashboard' && (
-            <DashboardView
-              tasks={tasks}
-              stats={stats}
-              chartData={chartData}
-              onNavigate={setView}
-            />
-          )}
+            {view === 'dashboard' && (
+              <DashboardView
+                tasks={tasks}
+                stats={stats}
+                chartData={chartData}
+                onNavigate={setView}
+              />
+            )}
 
-          {view === 'categories' && (
-            <CategoriesView tasks={tasks} />
-          )}
+            {view === 'categories' && (
+              <CategoriesView tasks={tasks} />
+            )}
 
-          {view === 'calendar' && (
-            <CalendarView
-              today={today}
-              onSelectDate={(date) => date && setToday(date)}
-            />
-          )}
+            {view === 'calendar' && (
+              <CalendarView
+                today={today}
+                onSelectDate={(date) => date && setToday(date)}
+              />
+            )}
 
-          {view === 'settings' && (
-            <SettingsView
-              profile={profile}
-              preferences={preferences}
-              isDarkMode={isDarkMode}
-              onToggleDarkMode={toggleDarkMode}
-              onEditProfile={() => setIsEditingProfile(true)}
-              onPreferencesChange={setPreferences}
-              onSavePreferences={() => savePreferences(preferences)}
-            />
-          )}
+            {view === 'settings' && (
+              <SettingsView
+                profile={profile}
+                preferences={preferences}
+                isDarkMode={isDarkMode}
+                onToggleDarkMode={toggleDarkMode}
+                onEditProfile={() => setIsEditingProfile(true)}
+                onPreferencesChange={setPreferences}
+                onSavePreferences={() => savePreferences(preferences)}
+              />
+            )}
+          </Suspense>
         </div>
       </main>
 
       {/* Dialogs */}
-      <TaskEditDialog
-        task={editingTask}
-        onClose={() => setEditingTask(null)}
-        onSave={updateTask}
-        onChange={setEditingTask}
-      />
+      <Suspense fallback={null}>
+        {editingTask && (
+          <TaskEditDialog
+            task={editingTask}
+            onClose={() => setEditingTask(null)}
+            onSave={updateTask}
+            onChange={setEditingTask}
+          />
+        )}
 
-      <ProfileEditDialog
-        isOpen={isEditingProfile}
-        profile={profile}
-        onClose={() => setIsEditingProfile(false)}
-        onSave={saveProfile}
-        onChange={setProfile}
-      />
+        {isEditingProfile && (
+          <ProfileEditDialog
+            isOpen={isEditingProfile}
+            profile={profile}
+            onClose={() => setIsEditingProfile(false)}
+            onSave={saveProfile}
+            onChange={setProfile}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

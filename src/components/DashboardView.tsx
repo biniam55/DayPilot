@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Task } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
@@ -20,58 +20,86 @@ interface DashboardViewProps {
   onNavigate: (view: string) => void;
 }
 
-export function DashboardView({ tasks, stats, chartData, onNavigate }: DashboardViewProps) {
+const StatCard = memo(({ 
+  title, 
+  icon: Icon, 
+  value, 
+  subtitle, 
+  className 
+}: { 
+  title: string; 
+  icon: any; 
+  value: string | number; 
+  subtitle: string; 
+  className?: string;
+}) => (
+  <Card className={cn("shadow-sm", className)}>
+    <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
+      <CardTitle className="text-[10px] sm:text-xs font-bold flex items-center gap-2 uppercase tracking-wider">
+        <Icon className="w-4 h-4" /> {title}
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+      <p className="text-2xl sm:text-3xl font-bold">{value}</p>
+      <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">{subtitle}</p>
+    </CardContent>
+  </Card>
+));
+
+StatCard.displayName = 'StatCard';
+
+const CustomTooltip = memo(({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-card border p-2 rounded-lg shadow-lg text-[10px]">
+        <p className="font-bold">{payload[0].payload.name}</p>
+        <p>{payload[0].value} Tasks</p>
+      </div>
+    );
+  }
+  return null;
+});
+
+CustomTooltip.displayName = 'CustomTooltip';
+
+export const DashboardView = memo(function DashboardView({ tasks, stats, chartData, onNavigate }: DashboardViewProps) {
+  const recentTasks = tasks.slice(0, 4);
+
   return (
     <ScrollArea className="h-full">
       <div className="p-4 sm:p-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto pb-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <Card className="bg-primary/5 border-primary/20 shadow-sm">
-            <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
-              <CardTitle className="text-[10px] sm:text-xs font-bold text-primary flex items-center gap-2 uppercase tracking-wider">
-                <CheckCircle2 className="w-4 h-4" /> Completion Rate
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-              <p className="text-2xl sm:text-3xl font-bold">{stats.progress}%</p>
-              <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">{stats.completed} / {stats.total} tasks done</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Completion Rate"
+            icon={CheckCircle2}
+            value={`${stats.progress}%`}
+            subtitle={`${stats.completed} / ${stats.total} tasks done`}
+            className="bg-primary/5 border-primary/20 text-primary"
+          />
           
-          <Card className="bg-destructive/5 border-destructive/20 shadow-sm">
-            <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
-              <CardTitle className="text-[10px] sm:text-xs font-bold text-destructive flex items-center gap-2 uppercase tracking-wider">
-                <AlertTriangle className="w-4 h-4" /> High Priority
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-              <p className="text-2xl sm:text-3xl font-bold">{stats.highPriority}</p>
-              <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Critical tasks pending</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="High Priority"
+            icon={AlertTriangle}
+            value={stats.highPriority}
+            subtitle="Critical tasks pending"
+            className="bg-destructive/5 border-destructive/20 text-destructive"
+          />
 
-          <Card className="bg-accent/5 border-accent/20 shadow-sm">
-            <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
-              <CardTitle className="text-[10px] sm:text-xs font-bold text-accent-foreground flex items-center gap-2 uppercase tracking-wider">
-                <Clock className="w-4 h-4" /> Time Required
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-              <p className="text-2xl sm:text-3xl font-bold">{Math.floor(stats.estimatedMinutes / 60)}h {stats.estimatedMinutes % 60}m</p>
-              <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Remaining for today</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Time Required"
+            icon={Clock}
+            value={`${Math.floor(stats.estimatedMinutes / 60)}h ${stats.estimatedMinutes % 60}m`}
+            subtitle="Remaining for today"
+            className="bg-accent/5 border-accent/20 text-accent-foreground"
+          />
 
-          <Card className="bg-muted/30 border-muted shadow-sm">
-            <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-2">
-              <CardTitle className="text-[10px] sm:text-xs font-bold text-muted-foreground flex items-center gap-2 uppercase tracking-wider">
-                <TrendingUp className="w-4 h-4" /> Productivity
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
-              <p className="text-2xl sm:text-3xl font-bold">Good</p>
-              <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-1">Steady pace maintained</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Productivity"
+            icon={TrendingUp}
+            value="Good"
+            subtitle="Steady pace maintained"
+            className="bg-muted/30 border-muted text-muted-foreground"
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
@@ -85,19 +113,7 @@ export function DashboardView({ tasks, stats, chartData, onNavigate }: Dashboard
                 <BarChart data={chartData}>
                   <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
                   <YAxis fontSize={10} tickLine={false} axisLine={false} />
-                  <Tooltip 
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="bg-card border p-2 rounded-lg shadow-lg text-[10px]">
-                            <p className="font-bold">{payload[0].payload.name}</p>
-                            <p>{payload[0].value} Tasks</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }} 
-                  />
+                  <Tooltip content={<CustomTooltip />} />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                     {chartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -117,7 +133,7 @@ export function DashboardView({ tasks, stats, chartData, onNavigate }: Dashboard
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
               <div className="space-y-6">
-                {tasks.slice(0, 4).map((task) => (
+                {recentTasks.map((task) => (
                   <div key={task.id} className="flex items-start gap-3">
                     <div className={cn(
                       "w-2 h-2 rounded-full mt-1.5 shrink-0",
@@ -144,4 +160,4 @@ export function DashboardView({ tasks, stats, chartData, onNavigate }: Dashboard
       </div>
     </ScrollArea>
   );
-}
+});

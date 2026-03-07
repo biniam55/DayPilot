@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Task, UserPreferences, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { INITIAL_TASKS, DEFAULT_PREFERENCES, DEFAULT_PROFILE, INITIAL_NOTIFICATIONS } from "@/lib/constants";
 
 interface Notification {
@@ -13,9 +14,9 @@ interface Notification {
 
 export function useDashboardState() {
   const { toast } = useToast();
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
-  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [tasks, setTasks] = useLocalStorage<Task[]>('daypilot-tasks', INITIAL_TASKS);
+  const [preferences, setPreferences] = useLocalStorage<UserPreferences>('daypilot-preferences', DEFAULT_PREFERENCES);
+  const [profile, setProfile] = useLocalStorage<UserProfile>('daypilot-profile', DEFAULT_PROFILE);
   const [activeTab, setActiveTab] = useState('all');
   const [view, setView] = useState<'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings'>('dashboard');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -33,7 +34,7 @@ export function useDashboardState() {
     }
   }, []);
 
-  const toggleDarkMode = () => {
+  const toggleDarkMode = useCallback(() => {
     setIsDarkMode(prev => {
       const newMode = !prev;
       if (typeof document !== 'undefined') {
@@ -45,7 +46,7 @@ export function useDashboardState() {
       }
       return newMode;
     });
-  };
+  }, []);
 
   const addTask = useCallback((name: string) => {
     const newTask: Task = {
@@ -65,24 +66,28 @@ export function useDashboardState() {
     });
   }, [toast]);
 
-  const updateTask = (updatedTask: Task) => {
+  const updateTask = useCallback((updatedTask: Task) => {
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
     setEditingTask(null);
     toast({
       title: "Task updated",
       description: "Changes saved successfully.",
     });
-  };
+  }, [toast]);
 
-  const deleteTask = (id: string) => {
-    const taskToDelete = tasks.find(t => t.id === id);
-    setTasks(prev => prev.filter(t => t.id !== id));
-    toast({
-      variant: "destructive",
-      title: "Task deleted",
-      description: `"${taskToDelete?.name}" removed.`,
+  const deleteTask = useCallback((id: string) => {
+    setTasks(prev => {
+      const taskToDelete = prev.find(t => t.id === id);
+      if (taskToDelete) {
+        toast({
+          variant: "destructive",
+          title: "Task deleted",
+          description: `"${taskToDelete.name}" removed.`,
+        });
+      }
+      return prev.filter(t => t.id !== id);
     });
-  };
+  }, [toast]);
 
   const toggleTaskComplete = useCallback((id: string) => {
     const task = tasks.find(t => t.id === id);
@@ -99,30 +104,30 @@ export function useDashboardState() {
     }
   }, [tasks, toast]);
 
-  const handleScheduleUpdate = (scheduledTasks: Task[]) => {
+  const handleScheduleUpdate = useCallback((scheduledTasks: Task[]) => {
     setTasks(scheduledTasks);
     toast({
       title: "Schedule Optimized",
       description: "AI has re-organized your day.",
     });
-  };
+  }, [toast]);
 
-  const savePreferences = (newPrefs: UserPreferences) => {
+  const savePreferences = useCallback((newPrefs: UserPreferences) => {
     setPreferences(newPrefs);
     toast({
       title: "Settings saved",
       description: "Preferences updated.",
     });
-  };
+  }, [toast]);
 
-  const saveProfile = (newProfile: UserProfile) => {
+  const saveProfile = useCallback((newProfile: UserProfile) => {
     setProfile(newProfile);
     setIsEditingProfile(false);
     toast({
       title: "Profile updated",
       description: "Saved successfully.",
     });
-  };
+  }, [toast]);
 
   const stats = useMemo(() => {
     const completed = tasks.filter(t => t.isCompleted).length;
