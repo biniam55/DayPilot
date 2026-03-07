@@ -64,7 +64,7 @@ export function useDashboardState() {
       title: "Task created",
       description: `"${name}" has been added.`,
     });
-  }, [toast]);
+  }, [setTasks, toast]);
 
   const updateTask = useCallback((updatedTask: Task) => {
     setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
@@ -73,7 +73,7 @@ export function useDashboardState() {
       title: "Task updated",
       description: "Changes saved successfully.",
     });
-  }, [toast]);
+  }, [setTasks, toast]);
 
   const deleteTask = useCallback((id: string) => {
     setTasks(prev => {
@@ -87,22 +87,28 @@ export function useDashboardState() {
       }
       return prev.filter(t => t.id !== id);
     });
-  }, [toast]);
+  }, [setTasks, toast]);
 
   const toggleTaskComplete = useCallback((id: string) => {
-    const task = tasks.find(t => t.id === id);
-    if (!task) return;
-    
-    const newStatus = !task.isCompleted;
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, isCompleted: newStatus, status: newStatus ? 'completed' : 'todo' } : t));
-    
-    if (newStatus) {
-      toast({
-        title: "Task Completed",
-        description: `Great job on "${task.name}"!`,
-      });
-    }
-  }, [tasks, toast]);
+    setTasks(prev => {
+      const task = prev.find(t => t.id === id);
+      if (!task) return prev;
+      
+      const newStatus = !task.isCompleted;
+      const updatedTasks = prev.map(t => 
+        t.id === id ? { ...t, isCompleted: newStatus, status: newStatus ? 'completed' as const : 'todo' as const } : t
+      );
+      
+      if (newStatus) {
+        toast({
+          title: "Task Completed",
+          description: `Great job on "${task.name}"!`,
+        });
+      }
+      
+      return updatedTasks;
+    });
+  }, [setTasks, toast]);
 
   const handleScheduleUpdate = useCallback((scheduledTasks: Task[]) => {
     setTasks(scheduledTasks);
@@ -110,7 +116,7 @@ export function useDashboardState() {
       title: "Schedule Optimized",
       description: "AI has re-organized your day.",
     });
-  }, [toast]);
+  }, [setTasks, toast]);
 
   const savePreferences = useCallback((newPrefs: UserPreferences) => {
     setPreferences(newPrefs);
@@ -118,7 +124,7 @@ export function useDashboardState() {
       title: "Settings saved",
       description: "Preferences updated.",
     });
-  }, [toast]);
+  }, [setPreferences, toast]);
 
   const saveProfile = useCallback((newProfile: UserProfile) => {
     setProfile(newProfile);
@@ -127,7 +133,7 @@ export function useDashboardState() {
       title: "Profile updated",
       description: "Saved successfully.",
     });
-  }, [toast]);
+  }, [setProfile, toast]);
 
   const stats = useMemo(() => {
     const completed = tasks.filter(t => t.isCompleted).length;
