@@ -59,11 +59,15 @@ export default function DayPilotDashboard() {
     saveProfile,
   } = useDashboardState();
 
+  const handleViewChange = (newView: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings') => {
+    setView(newView);
+  };
+
   const navContent = (
     <DashboardSidebar 
       view={view} 
       stats={stats} 
-      onViewChange={setView}
+      onViewChange={handleViewChange}
       onMobileMenuClose={() => setIsMobileMenuOpen(false)}
     />
   );
@@ -112,7 +116,7 @@ export default function DayPilotDashboard() {
                 tasks={tasks}
                 stats={stats}
                 chartData={chartData}
-                onNavigate={setView}
+                onNavigate={handleViewChange}
               />
             )}
 
