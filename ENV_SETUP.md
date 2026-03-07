@@ -13,6 +13,8 @@ GEMINI_API_KEY=AIzaSyAF2dnXuixsmMqAYirvZvjySnA5sJVvhUo
 GOOGLE_GENAI_API_KEY=AIzaSyAF2dnXuixsmMqAYirvZvjySnA5sJVvhUo
 ```
 
+**⚠️ IMPORTANT:** These API keys are required for the AI Schedule Assistant to work!
+
 **Firebase variables (if you're using Firebase):**
 ```env
 NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key

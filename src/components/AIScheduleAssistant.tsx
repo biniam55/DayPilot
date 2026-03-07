@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Sparkles, Loader2, AlertCircle } from "lucide-react";
 import { Task, UserPreferences } from "@/lib/types";
-import { suggestOptimalDailySchedule } from "@/ai/flows/ai-suggest-optimal-daily-schedule";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface AIScheduleAssistantProps {
@@ -17,27 +16,42 @@ interface AIScheduleAssistantProps {
 export function AIScheduleAssistant({ tasks, preferences, onScheduleUpdate }: AIScheduleAssistantProps) {
   const [loading, setLoading] = useState(false);
   const [explanation, setExplanation] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSuggestSchedule = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const result = await suggestOptimalDailySchedule({
-        tasks: tasks.map(t => ({
-          id: t.id,
-          name: t.name,
-          description: t.description,
-          priority: t.priority,
-          estimatedDurationMinutes: t.estimatedTimeMinutes,
-          category: t.category,
-          dueDate: t.dueDate
-        })),
-        preferences
+      const response = await fetch('/api/schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tasks: tasks.map(t => ({
+            id: t.id,
+            name: t.name,
+            description: t.description || '',
+            priority: t.priority,
+            estimatedDurationMinutes: t.estimatedTimeMinutes,
+            category: t.category,
+            dueDate: t.dueDate
+          })),
+          preferences
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate schedule');
+      }
+
+      const result = await response.json();
 
       setExplanation(result.explanation);
       
       const updatedTasks = tasks.map(task => {
-        const scheduled = result.scheduledTasks.find(st => st.id === task.id);
+        const scheduled = result.scheduledTasks.find((st: any) => st.id === task.id);
         if (scheduled) {
           return {
             ...task,
@@ -49,8 +63,9 @@ export function AIScheduleAssistant({ tasks, preferences, onScheduleUpdate }: AI
       });
 
       onScheduleUpdate(updatedTasks);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Scheduling failed:", error);
+      setError(error.message || 'Failed to generate schedule. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -69,6 +84,16 @@ export function AIScheduleAssistant({ tasks, preferences, onScheduleUpdate }: AI
       </CardHeader>
       
       <CardContent className="space-y-4">
+        {error && (
+          <Alert variant="destructive" className="bg-destructive/10">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle className="text-xs font-bold">Error</AlertTitle>
+            <AlertDescription className="text-[11px] leading-relaxed">
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {explanation && (
           <Alert className="bg-white/50 border-accent/20">
             <AlertCircle className="h-4 w-4" />
