@@ -6,6 +6,7 @@ import { useVersionCheck } from "@/hooks/useVersionCheck";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
 import { UpdateBanner } from "@/components/UpdateBanner";
+import { UpdateTestButton } from "@/components/UpdateTestButton";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Lazy load view components
@@ -97,6 +98,9 @@ export default function DayPilotDashboard() {
         onUpdate={reloadApp} 
         onDismiss={handleDismissUpdate}
       />
+      
+      {/* Test Button - Remove in production */}
+      <UpdateTestButton />
 
       {/* Sidebar Navigation - Desktop */}
       <aside className="w-64 border-r bg-card hidden md:flex flex-col shrink-0">

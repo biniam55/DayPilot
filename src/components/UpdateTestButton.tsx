@@ -6,24 +6,19 @@ import { RefreshCw } from 'lucide-react';
 
 export function UpdateTestButton() {
   const testUpdate = () => {
-    // Simulate an old version in localStorage
+    // Simulate an old version to trigger update notification
     localStorage.setItem('app-version', '1.0.0');
-    alert('Test setup complete! Refresh the page to see the update notification.');
+    window.location.reload();
   };
 
   const clearVersion = () => {
     localStorage.removeItem('app-version');
-    localStorage.removeItem('last-version-check');
-    alert('Version data cleared! Refresh to reset.');
+    localStorage.removeItem('dismissed-version');
+    alert('Version data cleared. Reload to test fresh state.');
   };
 
-  // Only show in development
-  if (process.env.NODE_ENV !== 'development') {
-    return null;
-  }
-
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex gap-2">
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
       <Button 
         size="sm" 
         variant="outline" 

@@ -1,7 +1,7 @@
 // Runtime configuration for AI services
 export const AI_CONFIG = {
   apiKey: process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY,
-  model: 'googleai/gemini-1.5-flash', // Use stable model
+  model: 'gemini-1.5-flash', // Correct model name without prefix
 };
 
 // Validate configuration

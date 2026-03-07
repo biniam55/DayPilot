@@ -176,6 +176,16 @@ Uses Google's Gemini AI to:
 
 ### Troubleshooting
 
+**"models/gemini-1.5-flash is not found" or AI Assistant Error**
+
+Solution:
+1. Fixed in latest version - model name corrected to `gemini-1.5-flash` (without prefix)
+2. Ensure environment variables are set in Vercel:
+   - `GEMINI_API_KEY`
+   - `GOOGLE_GENAI_API_KEY`
+3. Redeploy after setting variables
+4. Check API key is valid at https://aistudio.google.com/app/apikey
+
 **"Failed to generate schedule"**
 
 Solutions:
@@ -188,8 +198,19 @@ Solutions:
 
 Solution:
 1. Vercel Dashboard → Settings → Environment Variables
-2. Add `GOOGLE_GENAI_API_KEY`
+2. Add `GOOGLE_GENAI_API_KEY` and `GEMINI_API_KEY`
 3. Redeploy
+
+**Update Notification Not Showing**
+
+Solution:
+1. Use test buttons in bottom-right corner:
+   - Click "Test Update" to simulate update
+   - Click "Clear Version" to reset state
+2. Check browser console for version logs
+3. Ensure version numbers match in:
+   - `src/hooks/useVersionCheck.ts`
+   - `src/app/api/version/route.ts`
 
 **Takes too long**
 
@@ -237,7 +258,13 @@ Automatically notifies users when new version is available:
 
 ### Testing Updates
 
-**Quick Test:**
+**Using Test Buttons (Easiest):**
+1. Look for buttons in bottom-right corner
+2. Click "Test Update" - simulates old version, triggers notification
+3. Click "Clear Version" - resets version data
+4. Remove test buttons before production (in `src/app/page.tsx`)
+
+**Manual Console Test:**
 1. Open browser console (F12)
 2. Run:
    ```javascript
