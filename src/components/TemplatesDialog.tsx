@@ -105,11 +105,11 @@ export function TemplatesDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] sm:max-h-[85vh] flex flex-col p-4 sm:p-6">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            <DialogTitle>Task Templates & Routines</DialogTitle>
+            <DialogTitle className="text-base sm:text-lg">Task Templates & Routines</DialogTitle>
           </div>
           <DialogDescription className="text-xs">
             Choose a template to quickly add multiple related tasks
@@ -117,14 +117,14 @@ export function TemplatesDialog({
         </DialogHeader>
 
         <Tabs defaultValue="workflows" className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="grid w-full grid-cols-3 h-10">
-            <TabsTrigger value="workflows" className="text-xs">
+          <TabsList className="grid w-full grid-cols-3 h-9 sm:h-10">
+            <TabsTrigger value="workflows" className="text-[10px] sm:text-xs">
               Workflows ({workflows.length})
             </TabsTrigger>
-            <TabsTrigger value="routines" className="text-xs">
+            <TabsTrigger value="routines" className="text-[10px] sm:text-xs">
               Routines ({routines.length})
             </TabsTrigger>
-            <TabsTrigger value="custom" className="text-xs">
+            <TabsTrigger value="custom" className="text-[10px] sm:text-xs">
               Custom ({custom.length})
             </TabsTrigger>
           </TabsList>
@@ -170,8 +170,8 @@ export function TemplatesDialog({
           </TabsContent>
         </Tabs>
 
-        <div className="flex items-center justify-between gap-4 pt-4 border-t">
-          <div className="text-xs text-muted-foreground">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 pt-4 border-t">
+          <div className="text-xs text-muted-foreground text-center sm:text-left">
             {selectedTemplate && (
               <span>
                 Selected: <span className="font-medium">{selectedTemplate.name}</span>
@@ -179,13 +179,13 @@ export function TemplatesDialog({
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose} className="text-xs">
+            <Button variant="outline" onClick={onClose} className="text-xs flex-1 sm:flex-none">
               Cancel
             </Button>
             <Button 
               onClick={handleApply} 
               disabled={!selectedTemplate}
-              className="text-xs"
+              className="text-xs flex-1 sm:flex-none"
             >
               Apply Template
             </Button>

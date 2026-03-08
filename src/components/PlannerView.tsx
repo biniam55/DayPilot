@@ -65,7 +65,21 @@ export const PlannerView = memo(function PlannerView({
     <>
       {/* Mobile View - Tabbed Interface */}
       <div className="md:hidden flex flex-col h-full gap-4 p-4">
-        <QuickTaskInput onAdd={onAddTask} />
+        <div className="flex gap-2 items-start">
+          <div className="flex-1">
+            <QuickTaskInput onAdd={onAddTask} />
+          </div>
+          <div className="p-4 bg-card rounded-xl border shadow-sm">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowTemplates(true)}
+              className="h-9 w-9 shrink-0"
+            >
+              <Sparkles className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
         
         <Tabs defaultValue="tasks" className="flex-1 flex flex-col overflow-hidden">
           <TabsList className="bg-muted/50 h-10 p-1 grid grid-cols-4 w-full">
@@ -113,7 +127,7 @@ export const PlannerView = memo(function PlannerView({
             </div>
           </TabsContent>
 
-          <TabsContent value="ai" className="flex-1 overflow-hidden mt-4">
+          <TabsContent value="ai" className="flex-1 overflow-hidden mt-4 data-[state=active]:flex data-[state=active]:flex-col">
             <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar">
               <AIScheduleAssistant 
                 tasks={tasks} 
@@ -129,8 +143,8 @@ export const PlannerView = memo(function PlannerView({
             </div>
           </TabsContent>
 
-          <TabsContent value="timer" className="flex-1 overflow-hidden mt-4">
-            <div className="h-full overflow-y-auto custom-scrollbar">
+          <TabsContent value="timer" className="flex-1 overflow-hidden mt-4 data-[state=active]:flex data-[state=active]:flex-col">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
               <PomodoroTimer 
                 currentTask={tasks.find(t => !t.isCompleted)?.name}
               />
