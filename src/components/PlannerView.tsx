@@ -1,14 +1,16 @@
-import React, { memo, useMemo } from 'react';
-import { Task, UserPreferences } from "@/lib/types";
+import React, { memo, useMemo, useState } from 'react';
+import { Task, UserPreferences, TaskTemplate } from "@/lib/types";
 import { Timeline } from "@/components/Timeline";
 import { TaskCard } from "@/components/TaskCard";
 import { QuickTaskInput } from "@/components/QuickTaskInput";
 import { AIScheduleAssistant } from "@/components/AIScheduleAssistant";
-import { Button } from "@/components/ui/button";
-import { ListTodo, TrendingUp } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { PomodoroTimer } from "@/components/PomodoroTimer";
+import { SmartSuggestions } from "@/components/SmartSuggestions";
+import { TemplatesDialog } from "@/components/TemplatesDialog";
+import { ListTodo, Sparkles } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { generateTasksFromTemplate } from "@/lib/templates";
 
 interface PlannerViewProps {
   tasks: Task[];
@@ -20,6 +22,7 @@ interface PlannerViewProps {
   onEditTask: (task: Task) => void;
   onDeleteTask: (id: string) => void;
   onScheduleUpdate: (tasks: Task[]) => void;
+  onAddMultipleTasks?: (tasks: Task[]) => void;
 }
 
 const EmptyState = memo(() => (
@@ -40,54 +43,120 @@ export const PlannerView = memo(function PlannerView({
   onToggleComplete,
   onEditTask,
   onDeleteTask,
-  onScheduleUpdate
+  onScheduleUpdate,
+  onAddMultipleTasks
 }: PlannerViewProps) {
+  const [showTemplates, setShowTemplates] = useState(false);
+  
   const filteredTasks = useMemo(() => {
     if (activeTab === 'todo') return tasks.filter(t => !t.isCompleted);
     if (activeTab === 'completed') return tasks.filter(t => t.isCompleted);
     return tasks;
   }, [tasks, activeTab]);
 
+  const handleApplyTemplate = (template: TaskTemplate) => {
+    const newTasks = generateTasksFromTemplate(template);
+    if (onAddMultipleTasks) {
+      onAddMultipleTasks(newTasks);
+    }
+  };
+
   return (
-    <div className="flex flex-col lg:flex-row h-full w-full gap-4 sm:gap-8 p-4 sm:p-8">
-      <div className="w-full lg:w-[350px] xl:w-[400px] h-[300px] lg:h-full shrink-0 overflow-hidden">
-        <Timeline tasks={tasks} />
+    <>
+      {/* Mobile View - Tabbed Interface */}
+      <div className="md:hidden flex flex-col h-full gap-4 p-4">
+        <QuickTaskInput onAdd={onAddTask} />
+        
+        <Tabs defaultValue="tasks" className="flex-1 flex flex-col overflow-hidden">
+          <TabsList className="bg-muted/50 h-10 p-1 grid grid-cols-3 w-full">
+            <TabsTrigger value="schedule" className="text-xs">Schedule</TabsTrigger>
+            <TabsTrigger value="tasks" className="text-xs">Tasks</TabsTrigger>
+            <TabsTrigger value="ai" className="text-xs">AI Assistant</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="schedule" className="flex-1 overflow-hidden mt-4">
+            <div className="h-full overflow-hidden">
+              <Timeline tasks={tasks} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="tasks" className="flex-1 overflow-hidden mt-4">
+            <div className="flex flex-col bg-card rounded-xl border shadow-sm overflow-hidden h-full">
+              <Tabs value={activeTab} onValueChange={onTabChange} className="flex-1 flex flex-col overflow-hidden">
+                <div className="px-4 py-3 border-b">
+                  <TabsList className="bg-muted/50 h-8 p-1">
+                    <TabsTrigger value="all" className="text-[10px] px-3">All</TabsTrigger>
+                    <TabsTrigger value="todo" className="text-[10px] px-3">To-Do</TabsTrigger>
+                    <TabsTrigger value="completed" className="text-[10px] px-3">Done</TabsTrigger>
+                  </TabsList>
+                </div>
+
+                <TabsContent value={activeTab} className="flex-1 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                    {filteredTasks.length > 0 ? (
+                      filteredTasks.map(task => (
+                        <TaskCard 
+                          key={task.id} 
+                          task={task} 
+                          onToggleComplete={onToggleComplete} 
+                          onEdit={onEditTask}
+                          onDelete={onDeleteTask}
+                        />
+                      ))
+                    ) : (
+                      <EmptyState />
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="ai" className="flex-1 overflow-hidden mt-4">
+            <AIScheduleAssistant 
+              tasks={tasks} 
+              preferences={preferences} 
+              onScheduleUpdate={onScheduleUpdate} 
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
-      <div className="flex-1 flex flex-col gap-4 sm:gap-6 min-w-0 overflow-hidden">
-        <QuickTaskInput onAdd={onAddTask} />
-        <div className="flex-1 flex flex-col bg-card rounded-xl border shadow-sm overflow-hidden">
-          <Tabs value={activeTab} onValueChange={onTabChange} className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b flex items-center justify-between gap-4 shrink-0">
-              <TabsList className="bg-muted/50 h-8 sm:h-9 p-1">
-                <TabsTrigger value="all" className="text-[10px] sm:text-xs px-2 sm:px-4 rounded-md">All</TabsTrigger>
-                <TabsTrigger value="todo" className="text-[10px] sm:text-xs px-2 sm:px-4 rounded-md">To-Do</TabsTrigger>
-                <TabsTrigger value="completed" className="text-[10px] sm:text-xs px-2 sm:px-4 rounded-md">Done</TabsTrigger>
-              </TabsList>
-              <div className="lg:hidden">
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 text-[10px] sm:text-xs gap-1">
-                      <TrendingUp className="w-3 h-3" />
-                      AI Tips
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-full sm:w-[400px] p-6">
-                    <SheetTitle className="sr-only">AI Schedule Assistant</SheetTitle>
-                    <SheetDescription className="sr-only">AI-powered schedule optimization</SheetDescription>
-                    <AIScheduleAssistant 
-                      tasks={tasks} 
-                      preferences={preferences} 
-                      onScheduleUpdate={onScheduleUpdate} 
-                    />
-                  </SheetContent>
-                </Sheet>
-              </div>
-            </div>
+      {/* Desktop View - Three Column Layout */}
+      <div className="hidden md:grid md:grid-cols-[320px_1fr_320px] lg:grid-cols-[380px_1fr_380px] h-full gap-6 p-6 overflow-hidden">
+        {/* Left Column - Timeline */}
+        <div className="overflow-hidden">
+          <Timeline tasks={tasks} />
+        </div>
 
-            <TabsContent value={activeTab} className="flex-1 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
-              <div className="flex-1 overflow-y-auto task-list-scroll">
-                <div className="p-4 sm:p-6 space-y-4">
+        {/* Middle Column - Tasks */}
+        <div className="flex flex-col gap-6 min-w-0 overflow-hidden">
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <QuickTaskInput onAdd={onAddTask} />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowTemplates(true)}
+              className="h-auto px-4 gap-2 shrink-0"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden lg:inline text-xs">Templates</span>
+            </Button>
+          </div>
+          
+          <div className="flex-1 flex flex-col bg-card rounded-xl border shadow-sm overflow-hidden">
+            <Tabs value={activeTab} onValueChange={onTabChange} className="flex-1 flex flex-col overflow-hidden">
+              <div className="px-6 py-4 border-b">
+                <TabsList className="bg-muted/50 h-9 p-1">
+                  <TabsTrigger value="all" className="text-xs px-4">All</TabsTrigger>
+                  <TabsTrigger value="todo" className="text-xs px-4">To-Do</TabsTrigger>
+                  <TabsTrigger value="completed" className="text-xs px-4">Done</TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value={activeTab} className="flex-1 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                   {filteredTasks.length > 0 ? (
                     filteredTasks.map(task => (
                       <TaskCard 
@@ -102,19 +171,55 @@ export const PlannerView = memo(function PlannerView({
                     <EmptyState />
                   )}
                 </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* Right Column - AI Assistant & Tools */}
+        <div className="flex flex-col overflow-hidden">
+          <Tabs defaultValue="ai" className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="bg-muted/50 h-10 p-1 grid grid-cols-2 w-full shrink-0">
+              <TabsTrigger value="ai" className="text-xs">AI & Suggestions</TabsTrigger>
+              <TabsTrigger value="timer" className="text-xs">Timer</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="ai" className="flex-1 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+              <div className="flex-1 overflow-y-auto mt-4 space-y-6 pr-2 custom-scrollbar">
+                <div className="shrink-0">
+                  <AIScheduleAssistant 
+                    tasks={tasks} 
+                    preferences={preferences} 
+                    onScheduleUpdate={onScheduleUpdate} 
+                  />
+                </div>
+                <div className="shrink-0">
+                  <SmartSuggestions 
+                    tasks={tasks}
+                    onSelectTask={(task) => {
+                      console.log('Selected task:', task);
+                    }}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="timer" className="flex-1 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+              <div className="flex-1 overflow-y-auto mt-4 custom-scrollbar">
+                <PomodoroTimer 
+                  currentTask={tasks.find(t => !t.isCompleted)?.name}
+                />
               </div>
             </TabsContent>
           </Tabs>
         </div>
       </div>
 
-      <aside className="w-80 hidden xl:flex flex-col gap-6 shrink-0 overflow-y-auto">
-        <AIScheduleAssistant 
-          tasks={tasks} 
-          preferences={preferences} 
-          onScheduleUpdate={onScheduleUpdate} 
-        />
-      </aside>
-    </div>
+      <TemplatesDialog
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        onApplyTemplate={handleApplyTemplate}
+      />
+    </>
   );
 });

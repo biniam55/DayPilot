@@ -1,20 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Compass, ListTodo, Calendar as CalendarIcon, Settings } from "lucide-react";
+import { LayoutDashboard, Compass, ListTodo, Calendar as CalendarIcon, BarChart3, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DashboardSidebarProps {
-  view: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings';
+  view: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'analytics' | 'settings';
   stats: {
     completed: number;
     progress: number;
   };
-  onViewChange: (view: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings') => void;
+  onViewChange: (view: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'analytics' | 'settings') => void;
   onMobileMenuClose?: () => void;
 }
 
 export function DashboardSidebar({ view, stats, onViewChange, onMobileMenuClose }: DashboardSidebarProps) {
-  const handleViewChange = (newView: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings') => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const handleViewChange = (newView: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'analytics' | 'settings') => {
     onViewChange(newView);
     onMobileMenuClose?.();
   };
@@ -33,7 +38,8 @@ export function DashboardSidebar({ view, stats, onViewChange, onMobileMenuClose 
           { id: 'dashboard' as const, icon: LayoutDashboard, label: 'Dashboard' },
           { id: 'planner' as const, icon: Compass, label: 'My Planner' },
           { id: 'categories' as const, icon: ListTodo, label: 'Categories' },
-          { id: 'calendar' as const, icon: CalendarIcon, label: 'Calendar' }
+          { id: 'calendar' as const, icon: CalendarIcon, label: 'Calendar' },
+          { id: 'analytics' as const, icon: BarChart3, label: 'Analytics' }
         ].map((item) => (
           <Button 
             key={item.id}
@@ -56,11 +62,11 @@ export function DashboardSidebar({ view, stats, onViewChange, onMobileMenuClose 
           <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden mb-2">
             <div 
               className="h-full bg-accent transition-all duration-500" 
-              style={{ width: `${stats.progress}%` }}
+              style={{ width: mounted ? `${stats.progress}%` : '0%' }}
             />
           </div>
           <p className="text-[10px] text-muted-foreground">
-            {stats.completed} tasks completed ({stats.progress}%)
+            {mounted ? stats.completed : 0} tasks completed ({mounted ? stats.progress : 0}%)
           </p>
         </div>
         <Button 

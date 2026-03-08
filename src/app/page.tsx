@@ -1,11 +1,17 @@
 "use client"
 
-import React, { lazy, Suspense, useState } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { useDashboardState } from "@/hooks/useDashboardState";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useNotifications } from "@/hooks/useNotifications";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { DashboardHeader } from "@/components/DashboardHeader";
-import { UpdateTestButton } from "@/components/UpdateTestButton";
+import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
+import { CommandPalette } from "@/components/CommandPalette";
+import { TemplatesDialog } from "@/components/TemplatesDialog";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { generateTasksFromTemplate } from "@/lib/templates";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Lazy load view components
@@ -13,6 +19,7 @@ const DashboardView = lazy(() => import("@/components/DashboardView").then(m => 
 const PlannerView = lazy(() => import("@/components/PlannerView").then(m => ({ default: m.PlannerView })));
 const CategoriesView = lazy(() => import("@/components/CategoriesView").then(m => ({ default: m.CategoriesView })));
 const CalendarView = lazy(() => import("@/components/CalendarView").then(m => ({ default: m.CalendarView })));
+const AnalyticsView = lazy(() => import("@/components/AnalyticsView").then(m => ({ default: m.AnalyticsView })));
 const SettingsView = lazy(() => import("@/components/SettingsView").then(m => ({ default: m.SettingsView })));
 const TaskEditDialog = lazy(() => import("@/components/TaskEditDialog").then(m => ({ default: m.TaskEditDialog })));
 const ProfileEditDialog = lazy(() => import("@/components/ProfileEditDialog").then(m => ({ default: m.ProfileEditDialog })));
@@ -29,6 +36,10 @@ const ViewSkeleton = () => (
 );
 
 export default function DayPilotDashboard() {
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  
   const {
     tasks,
     preferences,
@@ -53,17 +64,61 @@ export default function DayPilotDashboard() {
     setProfile,
     toggleDarkMode,
     addTask,
+    addMultipleTasks,
+    importTasks,
     updateTask,
     deleteTask,
     toggleTaskComplete,
     handleScheduleUpdate,
     savePreferences,
     saveProfile,
+    setCelebrateCompletionCallback,
+    markNotificationRead,
   } = useDashboardState();
 
-  const handleViewChange = (newView: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings') => {
+  // Notifications
+  const {
+    permission: notificationPermission,
+    settings: notificationSettings,
+    isSupported: notificationSupported,
+    requestPermission: requestNotificationPermission,
+    updateSettings: updateNotificationSettings,
+    celebrateCompletion,
+  } = useNotifications(tasks);
+
+  // Connect celebration callback to dashboard state
+  useEffect(() => {
+    setCelebrateCompletionCallback(() => celebrateCompletion);
+  }, [celebrateCompletion, setCelebrateCompletionCallback]);
+
+  const handleViewChange = (newView: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'analytics' | 'settings') => {
     setView(newView);
   };
+
+  const handleApplyTemplate = (template: any) => {
+    const newTasks = generateTasksFromTemplate(template);
+    if (addMultipleTasks) {
+      addMultipleTasks(newTasks);
+    }
+  };
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    onNewTask: () => {
+      setView('planner');
+      // Focus on quick task input would happen here
+    },
+    onSearch: () => setShowCommandPalette(true),
+    onNavigateDashboard: () => setView('dashboard'),
+    onNavigatePlanner: () => setView('planner'),
+    onNavigateCategories: () => setView('categories'),
+    onNavigateCalendar: () => setView('calendar'),
+    onNavigateAnalytics: () => setView('analytics'),
+    onHelp: () => setShowKeyboardShortcuts(true),
+    onQuickAdd: () => {
+      setView('planner');
+    },
+  });
 
   const navContent = (
     <DashboardSidebar 
@@ -76,9 +131,6 @@ export default function DayPilotDashboard() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden text-foreground">
-      {/* Test Button - Remove in production */}
-      <UpdateTestButton />
-
       {/* Sidebar Navigation - Desktop */}
       <aside className="w-64 border-r bg-card hidden md:flex flex-col shrink-0">
         {navContent}
@@ -95,6 +147,7 @@ export default function DayPilotDashboard() {
           onToggleDarkMode={toggleDarkMode}
           onEditProfile={() => setIsEditingProfile(true)}
           onMobileMenuChange={setIsMobileMenuOpen}
+          onMarkNotificationRead={markNotificationRead}
           navContent={navContent}
         />
 
@@ -112,6 +165,7 @@ export default function DayPilotDashboard() {
                   onEditTask={setEditingTask}
                   onDeleteTask={deleteTask}
                   onScheduleUpdate={handleScheduleUpdate}
+                  onAddMultipleTasks={addMultipleTasks}
                 />
               </div>
             )}
@@ -136,15 +190,26 @@ export default function DayPilotDashboard() {
               />
             )}
 
+            {view === 'analytics' && (
+              <AnalyticsView tasks={tasks} />
+            )}
+
             {view === 'settings' && (
               <SettingsView
                 profile={profile}
                 preferences={preferences}
                 isDarkMode={isDarkMode}
+                tasks={tasks}
+                notificationPermission={notificationPermission}
+                notificationSupported={notificationSupported}
+                notificationSettings={notificationSettings}
                 onToggleDarkMode={toggleDarkMode}
                 onEditProfile={() => setIsEditingProfile(true)}
                 onPreferencesChange={setPreferences}
                 onSavePreferences={() => savePreferences(preferences)}
+                onImportTasks={importTasks}
+                onRequestNotificationPermission={requestNotificationPermission}
+                onUpdateNotificationSettings={updateNotificationSettings}
               />
             )}
           </Suspense>
@@ -156,6 +221,7 @@ export default function DayPilotDashboard() {
         {editingTask && (
           <TaskEditDialog
             task={editingTask}
+            allTasks={tasks}
             onClose={() => setEditingTask(null)}
             onSave={updateTask}
             onChange={setEditingTask}
@@ -172,6 +238,33 @@ export default function DayPilotDashboard() {
           />
         )}
       </Suspense>
+
+      {/* Keyboard Shortcuts Dialog */}
+      <KeyboardShortcutsDialog
+        isOpen={showKeyboardShortcuts}
+        onClose={() => setShowKeyboardShortcuts(false)}
+      />
+
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        tasks={tasks}
+        onSelectTask={setEditingTask}
+        onNavigate={handleViewChange}
+        onNewTask={() => setView('planner')}
+        onTemplates={() => setShowTemplates(true)}
+      />
+
+      {/* Templates Dialog */}
+      <TemplatesDialog
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        onApplyTemplate={handleApplyTemplate}
+      />
+
+      {/* Offline Indicator */}
+      <OfflineIndicator />
     </div>
   );
 }

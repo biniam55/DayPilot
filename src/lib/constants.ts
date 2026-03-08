@@ -11,6 +11,13 @@ export const INITIAL_TASKS: Task[] = [
     status: 'in-progress',
     category: 'Work',
     dueDate: '2024-05-20',
+    energyLevel: 'high',
+    subtasks: [
+      { id: '1-1', name: 'Create slide outline', isCompleted: true },
+      { id: '1-2', name: 'Design key visuals', isCompleted: false },
+      { id: '1-3', name: 'Practice delivery', isCompleted: false },
+    ],
+    createdAt: '2024-03-07T10:00:00.000Z',
   },
   {
     id: '2',
@@ -18,9 +25,14 @@ export const INITIAL_TASKS: Task[] = [
     description: 'Clear the inbox and flag urgent items.',
     priority: 'medium',
     estimatedTimeMinutes: 30,
+    actualTimeMinutes: 25,
     isCompleted: true,
     status: 'completed',
     category: 'Work',
+    energyLevel: 'low',
+    recurrence: 'daily',
+    completedAt: '2024-03-07T09:00:00.000Z',
+    createdAt: '2024-03-07T08:00:00.000Z',
   },
   {
     id: '3',
@@ -31,6 +43,9 @@ export const INITIAL_TASKS: Task[] = [
     isCompleted: false,
     status: 'todo',
     category: 'Work',
+    energyLevel: 'medium',
+    recurrence: 'weekly',
+    createdAt: '2024-03-07T10:00:00.000Z',
   },
   {
     id: '4',
@@ -41,6 +56,15 @@ export const INITIAL_TASKS: Task[] = [
     isCompleted: false,
     status: 'todo',
     category: 'Health',
+    energyLevel: 'high',
+    recurrence: 'daily',
+    subtasks: [
+      { id: '4-1', name: 'Warm up (10 min)', isCompleted: false },
+      { id: '4-2', name: 'Cardio (30 min)', isCompleted: false },
+      { id: '4-3', name: 'Strength training (40 min)', isCompleted: false },
+      { id: '4-4', name: 'Cool down (10 min)', isCompleted: false },
+    ],
+    createdAt: '2024-03-07T10:00:00.000Z',
   }
 ];
 

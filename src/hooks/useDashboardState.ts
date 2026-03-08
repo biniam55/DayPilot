@@ -3,6 +3,7 @@ import { Task, UserPreferences, UserProfile } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
+import { useTaskReminders } from "@/hooks/useTaskReminders";
 import { INITIAL_TASKS, DEFAULT_PREFERENCES, DEFAULT_PROFILE, INITIAL_NOTIFICATIONS } from "@/lib/constants";
 
 interface Notification {
@@ -23,13 +24,27 @@ export function useDashboardState() {
   const [preferences, setPreferences] = useLocalStorage<UserPreferences>('daypilot-preferences', DEFAULT_PREFERENCES);
   const [profile, setProfile] = useLocalStorage<UserProfile>('daypilot-profile', DEFAULT_PROFILE);
   const [activeTab, setActiveTab] = useState('all');
-  const [view, setView] = useState<'dashboard' | 'planner' | 'categories' | 'calendar' | 'settings'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'planner' | 'categories' | 'calendar' | 'analytics' | 'settings'>('dashboard');
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [today, setToday] = useState<Date | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
+  const [isClient, setIsClient] = useState(false);
+  const [celebrateCompletionCallback, setCelebrateCompletionCallback] = useState<((taskName: string) => void) | null>(null);
+
+  // Add notification handler for task reminders
+  const addNotification = useCallback((notification: Notification) => {
+    setNotifications(prev => [notification, ...prev]);
+  }, []);
+
+  // Initialize task reminders only on client (disabled to prevent dependency issues)
+  // useTaskReminders({
+  //   tasks: isClient ? tasks : [],
+  //   onNotification: addNotification,
+  //   onToast: toast
+  // });
 
   // Add update notification when new version is available
   useEffect(() => {
@@ -61,6 +76,7 @@ export function useDashboardState() {
   }, [newVersionAvailable, reloadApp, toast]);
 
   useEffect(() => {
+    setIsClient(true);
     setToday(new Date());
     if (typeof document !== 'undefined') {
       const isDark = document.documentElement.classList.contains('dark');
@@ -82,21 +98,52 @@ export function useDashboardState() {
     });
   }, []);
 
-  const addTask = useCallback((name: string) => {
+  const addTask = useCallback((
+    name: string, 
+    priority: 'high' | 'medium' | 'low' = 'medium', 
+    duration: number = 30,
+    energyLevel?: 'high' | 'medium' | 'low',
+    recurrence?: 'none' | 'daily' | 'weekly' | 'monthly'
+  ) => {
+    const now = new Date().toISOString();
     const newTask: Task = {
       id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       name,
-      priority: 'medium',
-      estimatedTimeMinutes: 30,
+      priority,
+      estimatedTimeMinutes: duration,
       isCompleted: false,
       status: 'todo',
       category: 'General',
       description: '',
+      energyLevel: energyLevel || 'medium',
+      recurrence: recurrence || 'none',
+      createdAt: now,
     };
     setTasks(prev => [newTask, ...prev]);
     toast({
       title: "Task created",
       description: `"${name}" has been added.`,
+    });
+  }, [setTasks, toast]);
+
+  const addMultipleTasks = useCallback((newTasks: Task[]) => {
+    setTasks(prev => [...newTasks, ...prev]);
+    toast({
+      title: "Template Applied",
+      description: `Added ${newTasks.length} tasks from template.`,
+    });
+  }, [setTasks, toast]);
+
+  const importTasks = useCallback((importedTasks: Task[]) => {
+    // Filter out duplicates by ID
+    setTasks(prev => {
+      const existingIds = new Set(prev.map(t => t.id));
+      const newTasks = importedTasks.filter(t => !existingIds.has(t.id));
+      return [...prev, ...newTasks];
+    });
+    toast({
+      title: "Tasks Imported",
+      description: `Successfully imported ${importedTasks.length} tasks.`,
     });
   }, [setTasks, toast]);
 
@@ -138,11 +185,16 @@ export function useDashboardState() {
           title: "Task Completed",
           description: `Great job on "${task.name}"!`,
         });
+        
+        // Trigger browser notification celebration
+        if (celebrateCompletionCallback) {
+          celebrateCompletionCallback(task.name);
+        }
       }
       
       return updatedTasks;
     });
-  }, [setTasks, toast]);
+  }, [setTasks, toast, celebrateCompletionCallback]);
 
   const handleScheduleUpdate = useCallback((scheduledTasks: Task[]) => {
     setTasks(scheduledTasks);
@@ -168,6 +220,12 @@ export function useDashboardState() {
       description: "Saved successfully.",
     });
   }, [setProfile, toast]);
+
+  const markNotificationRead = useCallback((id: string) => {
+    setNotifications(prev => 
+      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+    );
+  }, []);
 
   const stats = useMemo(() => {
     const completed = tasks.filter(t => t.isCompleted).length;
@@ -213,11 +271,15 @@ export function useDashboardState() {
     setProfile,
     toggleDarkMode,
     addTask,
+    addMultipleTasks,
+    importTasks,
     updateTask,
     deleteTask,
     toggleTaskComplete,
     handleScheduleUpdate,
     savePreferences,
     saveProfile,
+    setCelebrateCompletionCallback,
+    markNotificationRead,
   };
 }

@@ -1,5 +1,5 @@
-import React from 'react';
-import { UserPreferences, UserProfile } from "@/lib/types";
+import React, { useState } from 'react';
+import { UserPreferences, UserProfile, Task } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,27 +7,46 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Download, Upload } from "lucide-react";
+import { ExportImportDialog } from "@/components/ExportImportDialog";
+import { NotificationSettings } from "@/components/NotificationSettings";
+import { NotificationPermission } from '@/lib/notifications';
 
 interface SettingsViewProps {
   profile: UserProfile;
   preferences: UserPreferences;
   isDarkMode: boolean;
+  tasks: Task[];
+  notificationPermission: NotificationPermission;
+  notificationSupported: boolean;
+  notificationSettings: any;
   onToggleDarkMode: () => void;
   onEditProfile: () => void;
   onPreferencesChange: (prefs: UserPreferences) => void;
   onSavePreferences: () => void;
+  onImportTasks: (tasks: Task[]) => void;
+  onRequestNotificationPermission: () => Promise<NotificationPermission>;
+  onUpdateNotificationSettings: (settings: any) => void;
 }
 
 export function SettingsView({
   profile,
   preferences,
   isDarkMode,
+  tasks,
+  notificationPermission,
+  notificationSupported,
+  notificationSettings,
   onToggleDarkMode,
   onEditProfile,
   onPreferencesChange,
-  onSavePreferences
+  onSavePreferences,
+  onImportTasks,
+  onRequestNotificationPermission,
+  onUpdateNotificationSettings
 }: SettingsViewProps) {
+  const [showExportImport, setShowExportImport] = useState(false);
+  
   return (
     <ScrollArea className="h-full">
       <div className="p-4 sm:p-8 max-w-2xl mx-auto space-y-6 pb-20">
@@ -98,6 +117,33 @@ export function SettingsView({
             <Button onClick={onSavePreferences} className="w-full text-xs sm:text-sm">Save Work Schedule</Button>
           </CardFooter>
         </Card>
+
+        <NotificationSettings
+          permission={notificationPermission}
+          isSupported={notificationSupported}
+          settings={notificationSettings}
+          onRequestPermission={onRequestNotificationPermission}
+          onUpdateSettings={onUpdateNotificationSettings}
+        />
+
+        <Card className="shadow-sm">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg">Data Management</CardTitle>
+            <CardDescription className="text-[10px] sm:text-xs">Export or import your tasks</CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6">
+            <Button 
+              variant="outline" 
+              className="w-full gap-2"
+              onClick={() => setShowExportImport(true)}
+            >
+              <Download className="w-4 h-4" />
+              <Upload className="w-4 h-4" />
+              Export / Import Tasks
+            </Button>
+          </CardContent>
+        </Card>
+
         <Card className="shadow-sm">
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-base sm:text-lg">About</CardTitle>
@@ -117,6 +163,13 @@ export function SettingsView({
           </CardContent>
         </Card>
       </div>
+
+      <ExportImportDialog
+        isOpen={showExportImport}
+        onClose={() => setShowExportImport(false)}
+        tasks={tasks}
+        onImport={onImportTasks}
+      />
     </ScrollArea>
   );
 }

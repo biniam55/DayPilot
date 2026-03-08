@@ -35,6 +35,7 @@ interface DashboardHeaderProps {
   onToggleDarkMode: () => void;
   onEditProfile: () => void;
   onMobileMenuChange: (open: boolean) => void;
+  onMarkNotificationRead?: (id: string) => void;
   navContent: React.ReactNode;
 }
 
@@ -47,6 +48,7 @@ export function DashboardHeader({
   onToggleDarkMode,
   onEditProfile,
   onMobileMenuChange,
+  onMarkNotificationRead,
   navContent
 }: DashboardHeaderProps) {
   const viewTitles: Record<string, string> = {
@@ -54,8 +56,11 @@ export function DashboardHeader({
     dashboard: 'Dashboard',
     categories: 'Categories',
     calendar: 'Calendar',
+    analytics: 'Analytics',
     settings: 'Settings'
   };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
     <header className="h-16 border-b bg-card/50 backdrop-blur-md flex items-center justify-between px-4 sm:px-8 shrink-0 z-20">
@@ -86,21 +91,38 @@ export function DashboardHeader({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative h-8 w-8 sm:h-9 sm:w-9 rounded-full">
               <Bell className="w-4 h-4" />
-              {notifications.some(n => !n.isRead) && (
-                <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full border-2 border-background" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-background">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
               )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72 sm:w-80">
-            <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+            <DropdownMenuLabel className="flex items-center justify-between">
+              <span>Notifications</span>
+              {unreadCount > 0 && (
+                <span className="text-xs font-normal text-muted-foreground">
+                  {unreadCount} unread
+                </span>
+              )}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <ScrollArea className="h-64">
               {notifications.length > 0 ? (
                 notifications.map(n => (
                   <DropdownMenuItem 
                     key={n.id} 
-                    className="flex flex-col items-start gap-1 p-3 cursor-pointer hover:bg-accent"
-                    onClick={n.action}
+                    className={cn(
+                      "flex flex-col items-start gap-1 p-3 cursor-pointer hover:bg-accent",
+                      !n.isRead && "bg-accent/50"
+                    )}
+                    onClick={() => {
+                      if (!n.isRead && onMarkNotificationRead) {
+                        onMarkNotificationRead(n.id);
+                      }
+                      n.action?.();
+                    }}
                   >
                     <div className="flex w-full justify-between gap-2">
                       <span className={cn("text-xs font-bold", !n.isRead && "text-primary")}>{n.title}</span>
@@ -111,6 +133,9 @@ export function DashboardHeader({
                       <button className="text-[10px] text-primary font-semibold mt-1 hover:underline">
                         {n.actionLabel}
                       </button>
+                    )}
+                    {!n.isRead && (
+                      <div className="w-2 h-2 rounded-full bg-primary absolute right-3 top-1/2 -translate-y-1/2" />
                     )}
                   </DropdownMenuItem>
                 ))

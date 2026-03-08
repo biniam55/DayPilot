@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, AlertTriangle, TrendingUp, History } from "lucide-react";
+import { WeeklyReview } from "@/components/WeeklyReview";
 import { cn } from "@/lib/utils";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Cell } from "recharts";
 
@@ -156,6 +157,11 @@ export const DashboardView = memo(function DashboardView({ tasks, stats, chartDa
               </Button>
             </CardFooter>
           </Card>
+        </div>
+
+        {/* Weekly Review Section */}
+        <div className="max-w-4xl mx-auto">
+          <WeeklyReview tasks={tasks} />
         </div>
       </div>
     </ScrollArea>
