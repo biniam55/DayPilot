@@ -68,10 +68,11 @@ export const PlannerView = memo(function PlannerView({
         <QuickTaskInput onAdd={onAddTask} />
         
         <Tabs defaultValue="tasks" className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="bg-muted/50 h-10 p-1 grid grid-cols-3 w-full">
-            <TabsTrigger value="schedule" className="text-xs">Schedule</TabsTrigger>
-            <TabsTrigger value="tasks" className="text-xs">Tasks</TabsTrigger>
-            <TabsTrigger value="ai" className="text-xs">AI Assistant</TabsTrigger>
+          <TabsList className="bg-muted/50 h-10 p-1 grid grid-cols-4 w-full">
+            <TabsTrigger value="schedule" className="text-[10px]">Schedule</TabsTrigger>
+            <TabsTrigger value="tasks" className="text-[10px]">Tasks</TabsTrigger>
+            <TabsTrigger value="ai" className="text-[10px]">AI</TabsTrigger>
+            <TabsTrigger value="timer" className="text-[10px]">Timer</TabsTrigger>
           </TabsList>
 
           <TabsContent value="schedule" className="flex-1 overflow-hidden mt-4">
@@ -113,11 +114,27 @@ export const PlannerView = memo(function PlannerView({
           </TabsContent>
 
           <TabsContent value="ai" className="flex-1 overflow-hidden mt-4">
-            <AIScheduleAssistant 
-              tasks={tasks} 
-              preferences={preferences} 
-              onScheduleUpdate={onScheduleUpdate} 
-            />
+            <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar">
+              <AIScheduleAssistant 
+                tasks={tasks} 
+                preferences={preferences} 
+                onScheduleUpdate={onScheduleUpdate} 
+              />
+              <SmartSuggestions 
+                tasks={tasks}
+                onSelectTask={(task) => {
+                  console.log('Selected task:', task);
+                }}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="timer" className="flex-1 overflow-hidden mt-4">
+            <div className="h-full overflow-y-auto custom-scrollbar">
+              <PomodoroTimer 
+                currentTask={tasks.find(t => !t.isCompleted)?.name}
+              />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
