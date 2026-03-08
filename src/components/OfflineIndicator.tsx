@@ -7,10 +7,15 @@ import { WifiOff, Wifi } from "lucide-react";
 export function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(true);
   const [showOfflineMessage, setShowOfflineMessage] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+    
     // Set initial state
-    setIsOnline(navigator.onLine);
+    if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
 
     const handleOnline = () => {
       setIsOnline(true);
@@ -22,14 +27,21 @@ export function OfflineIndicator() {
       setShowOfflineMessage(true);
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
 
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
   }, []);
+
+  // Don't render on server
+  if (!isMounted) {
+    return null;
+  }
 
   if (!showOfflineMessage && isOnline) {
     return null;
