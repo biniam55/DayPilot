@@ -29,7 +29,7 @@ interface CommandPaletteProps {
   onClose: () => void;
   tasks: Task[];
   onSelectTask: (task: Task) => void;
-  onNavigate: (view: string) => void;
+  onNavigate: (view: 'dashboard' | 'planner' | 'categories' | 'calendar' | 'analytics' | 'settings') => void;
   onNewTask: () => void;
   onTemplates: () => void;
 }
