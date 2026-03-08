@@ -248,7 +248,9 @@ export function CommandPalette({
                 {filteredItems.map((item, index) => (
                   <div
                     key={item.id}
-                    ref={el => itemsRef.current[index] = el}
+                    ref={el => {
+                      itemsRef.current[index] = el;
+                    }}
                     onClick={item.action}
                     className={cn(
                       "flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors",
