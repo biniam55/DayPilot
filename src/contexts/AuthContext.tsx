@@ -37,51 +37,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    let redirectChecked = false;
+    let mounted = true;
 
     const initAuth = async () => {
       try {
-        // Set persistence
+        // Set persistence first
         await setPersistence(auth, browserLocalPersistence);
         
-        // Try to get redirect result
+        // Check for redirect result from Google Sign-In
         const result = await getRedirectResult(auth);
-        redirectChecked = true;
         
-        if (result?.user) {
+        if (result?.user && mounted) {
           console.log('Google redirect successful:', result.user.email);
-          // Don't navigate here, let onAuthStateChanged handle it
-        } else {
-          console.log('No redirect result');
         }
       } catch (error: any) {
         console.error('Redirect error:', error.code, error.message);
-        redirectChecked = true;
+      } finally {
+        // Mark that we've checked for redirect result
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
-    initAuth();
-
-    // Listen to auth state - this is the source of truth
+    // Listen to auth state changes
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       console.log('Auth state:', currentUser ? currentUser.email : 'no user');
-      
       setUser(currentUser);
-      
-      // Only set loading to false after redirect check is done
-      if (redirectChecked) {
-        setLoading(false);
-        
-        // If user just logged in via redirect, navigate to dashboard
-        if (currentUser && window.location.pathname === '/login') {
-          console.log('User logged in, navigating to dashboard');
-          router.push('/');
-        }
-      }
     });
 
-    return () => unsubscribe();
-  }, [router]);
+    initAuth();
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
