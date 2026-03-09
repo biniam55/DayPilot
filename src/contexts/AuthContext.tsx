@@ -32,58 +32,55 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initializing, setInitializing] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    let mounted = true;
+    let redirectChecked = false;
 
     const initAuth = async () => {
       try {
-        // Set persistence to LOCAL
+        // Set persistence
         await setPersistence(auth, browserLocalPersistence);
-        console.log('Auth persistence set to LOCAL');
-
-        // Check for redirect result (for mobile Google Sign-In)
-        console.log('Checking for Google redirect result...');
+        
+        // Try to get redirect result
         const result = await getRedirectResult(auth);
+        redirectChecked = true;
         
         if (result?.user) {
-          console.log('✓ Redirect successful, user:', result.user.email);
-          if (mounted) {
-            setUser(result.user);
-            setLoading(false);
-            setInitializing(false);
-            // Navigate after state is set
-            setTimeout(() => router.push('/'), 100);
-          }
-          return;
+          console.log('Google redirect successful:', result.user.email);
+          // Don't navigate here, let onAuthStateChanged handle it
         } else {
-          console.log('No redirect result found');
+          console.log('No redirect result');
         }
       } catch (error: any) {
         console.error('Redirect error:', error.code, error.message);
+        redirectChecked = true;
       }
-
-      // Listen to auth state changes
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        console.log('Auth state changed:', user ? user.email : 'no user');
-        if (mounted) {
-          setUser(user);
-          setLoading(false);
-          setInitializing(false);
-        }
-      });
-
-      return () => {
-        mounted = false;
-        unsubscribe();
-      };
     };
 
     initAuth();
+
+    // Listen to auth state - this is the source of truth
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      console.log('Auth state:', currentUser ? currentUser.email : 'no user');
+      
+      setUser(currentUser);
+      
+      // Only set loading to false after redirect check is done
+      if (redirectChecked) {
+        setLoading(false);
+        
+        // If user just logged in via redirect, navigate to dashboard
+        if (currentUser && window.location.pathname === '/login') {
+          console.log('User logged in, navigating to dashboard');
+          router.push('/');
+        }
+      }
+    });
+
+    return () => unsubscribe();
   }, [router]);
 
   const signIn = async (email: string, password: string) => {
@@ -99,7 +96,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Update profile with display name
       if (userCredential.user) {
         await updateProfile(userCredential.user, { displayName });
       }
@@ -117,26 +113,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         prompt: 'select_account'
       });
       
-      // Detect if mobile device
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       
-      console.log('Starting Google Sign-In, mobile:', isMobile);
-      
       if (isMobile) {
-        // Use redirect for mobile devices
-        console.log('Using redirect method');
+        console.log('Starting Google redirect sign-in');
         await signInWithRedirect(auth, provider);
-        // Page will navigate away, code after this won't execute
       } else {
-        // Use popup for desktop
-        console.log('Using popup method');
-        const result = await signInWithPopup(auth, provider);
-        console.log('Popup successful:', result.user.email);
+        console.log('Starting Google popup sign-in');
+        await signInWithPopup(auth, provider);
         router.push('/');
       }
     } catch (error: any) {
       console.error('Google Sign-In error:', error.code, error.message);
-      // Don't throw error if user cancelled
       if (error.code === 'auth/cancelled-popup-request' || 
           error.code === 'auth/popup-closed-by-user') {
         return;
@@ -156,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     user,
-    loading: loading || initializing,
+    loading,
     signIn,
     signUp,
     signInWithGoogle,
