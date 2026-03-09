@@ -18,6 +18,26 @@ export default function LoginContent() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  // Check if we're coming back from a redirect
+  React.useEffect(() => {
+    const checkRedirect = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('redirect') === 'google') {
+        setIsRedirecting(true);
+      }
+    };
+    checkRedirect();
+  }, []);
+
+  // Check if user has seen welcome page
+  React.useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem('daypilot-welcome-seen');
+    if (!hasSeenWelcome && !user) {
+      router.push('/welcome');
+    }
+  }, [router, user]);
 
   // Redirect if already logged in
   React.useEffect(() => {
@@ -61,18 +81,41 @@ export default function LoginContent() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
+      // Detect if mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        setIsRedirecting(true);
+      }
       await signInWithGoogle();
-      toast({ title: "Logged in with Google" });
+      if (!isMobile) {
+        toast({ title: "Logged in with Google" });
+      }
     } catch (error: any) {
       toast({ 
         variant: "destructive", 
         title: "Google Sign-In Failed", 
         description: error.message 
       });
-    } finally {
       setLoading(false);
+      setIsRedirecting(false);
     }
   };
+
+  // Show loading state during redirect
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md shadow-xl border-primary/10">
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-muted-foreground">Signing in with Google...</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
