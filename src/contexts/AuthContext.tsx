@@ -39,16 +39,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getRedirectResult(auth)
       .then((result) => {
         if (result?.user) {
+          // Clear auth in progress flag
+          localStorage.removeItem('daypilot-auth-in-progress');
           router.push('/');
         }
       })
       .catch((error) => {
         console.error('Redirect sign-in error:', error);
+        // Clear auth in progress flag on error
+        localStorage.removeItem('daypilot-auth-in-progress');
       });
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
+      
+      // Clear auth in progress flag when user state changes
+      if (user) {
+        localStorage.removeItem('daypilot-auth-in-progress');
+      }
     });
 
     return () => unsubscribe();

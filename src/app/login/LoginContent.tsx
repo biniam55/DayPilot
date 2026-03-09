@@ -19,36 +19,55 @@ export default function LoginContent() {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [hasCheckedWelcome, setHasCheckedWelcome] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   // Check if we're coming back from a redirect
   React.useEffect(() => {
     const checkRedirect = async () => {
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('redirect') === 'google') {
+      const authInProgress = localStorage.getItem('daypilot-auth-in-progress');
+      
+      if (urlParams.get('redirect') === 'google' || authInProgress) {
         setIsRedirecting(true);
+        setIsAuthenticating(true);
       }
     };
     checkRedirect();
   }, []);
 
-  // Check if user has seen welcome page (only when auth is not loading and user is not logged in)
+  // Clear auth flag when user is successfully logged in
   React.useEffect(() => {
-    if (!authLoading && !user && !hasCheckedWelcome) {
+    if (user) {
+      localStorage.removeItem('daypilot-auth-in-progress');
+    }
+  }, [user]);
+
+  // Mark as authenticating when auth is loading
+  React.useEffect(() => {
+    if (authLoading) {
+      setIsAuthenticating(true);
+    } else {
+      // Small delay to ensure user state is fully updated
+      setTimeout(() => setIsAuthenticating(false), 500);
+    }
+  }, [authLoading]);
+
+  // Check if user has seen welcome page (only when NOT authenticating)
+  React.useEffect(() => {
+    if (!authLoading && !user && !isAuthenticating) {
       const hasSeenWelcome = localStorage.getItem('daypilot-welcome-seen');
       if (!hasSeenWelcome) {
         router.push('/welcome');
       }
-      setHasCheckedWelcome(true);
     }
-  }, [authLoading, user, hasCheckedWelcome, router]);
+  }, [authLoading, user, isAuthenticating, router]);
 
   // Redirect if already logged in
   React.useEffect(() => {
-    if (user) {
+    if (user && !authLoading) {
       router.push('/');
     }
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +103,11 @@ export default function LoginContent() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
+    setIsAuthenticating(true);
+    
+    // Mark that we're starting authentication
+    localStorage.setItem('daypilot-auth-in-progress', 'true');
+    
     try {
       // Detect if mobile
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -94,6 +118,8 @@ export default function LoginContent() {
       if (!isMobile) {
         toast({ title: "Logged in with Google" });
       }
+      // Clear auth flag on success
+      localStorage.removeItem('daypilot-auth-in-progress');
     } catch (error: any) {
       toast({ 
         variant: "destructive", 
@@ -102,6 +128,9 @@ export default function LoginContent() {
       });
       setLoading(false);
       setIsRedirecting(false);
+      setIsAuthenticating(false);
+      // Clear auth flag on error
+      localStorage.removeItem('daypilot-auth-in-progress');
     }
   };
 
