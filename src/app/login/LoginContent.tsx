@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LoginContent() {
-  const { signIn, signUp, signInWithGoogle, user } = useAuthContext();
+  const { signIn, signUp, signInWithGoogle, user, loading: authLoading } = useAuthContext();
   const router = useRouter();
   const { toast } = useToast();
   const [isRegistering, setIsRegistering] = useState(false);
@@ -19,6 +19,7 @@ export default function LoginContent() {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [hasCheckedWelcome, setHasCheckedWelcome] = useState(false);
 
   // Check if we're coming back from a redirect
   React.useEffect(() => {
@@ -31,13 +32,16 @@ export default function LoginContent() {
     checkRedirect();
   }, []);
 
-  // Check if user has seen welcome page
+  // Check if user has seen welcome page (only when auth is not loading and user is not logged in)
   React.useEffect(() => {
-    const hasSeenWelcome = localStorage.getItem('daypilot-welcome-seen');
-    if (!hasSeenWelcome && !user) {
-      router.push('/welcome');
+    if (!authLoading && !user && !hasCheckedWelcome) {
+      const hasSeenWelcome = localStorage.getItem('daypilot-welcome-seen');
+      if (!hasSeenWelcome) {
+        router.push('/welcome');
+      }
+      setHasCheckedWelcome(true);
     }
-  }, [router, user]);
+  }, [authLoading, user, hasCheckedWelcome, router]);
 
   // Redirect if already logged in
   React.useEffect(() => {
