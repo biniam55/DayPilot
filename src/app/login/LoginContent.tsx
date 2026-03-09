@@ -52,6 +52,8 @@ export default function LoginContent() {
   }, [toast]);
 
   // Check if user has seen welcome page (only for direct visits, not after auth)
+  // TEMPORARILY DISABLED - interfering with Google auth
+  /*
   React.useEffect(() => {
     // NEVER check welcome if any of these conditions are true:
     // 1. Currently authenticating
@@ -87,6 +89,7 @@ export default function LoginContent() {
       return () => clearTimeout(timer);
     }
   }, [isAuthenticating, authLoading, user, router]);
+  */
 
   // Clear auth flag when user is successfully logged in
   React.useEffect(() => {
