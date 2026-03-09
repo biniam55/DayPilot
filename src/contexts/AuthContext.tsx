@@ -36,19 +36,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === 'undefined') return;
 
     // Check for redirect result (for mobile Google Sign-In)
-    getRedirectResult(auth)
-      .then((result) => {
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
         if (result?.user) {
+          console.log('Google Sign-In successful');
           // Clear auth in progress flag
           localStorage.removeItem('daypilot-auth-in-progress');
           router.push('/');
+        } else {
+          // No redirect result, clear flag if it exists
+          const authInProgress = localStorage.getItem('daypilot-auth-in-progress');
+          if (authInProgress) {
+            const timestamp = parseInt(authInProgress);
+            const now = Date.now();
+            // If flag is older than 30 seconds, clear it
+            if (now - timestamp > 30000) {
+              console.log('Clearing stale auth flag');
+              localStorage.removeItem('daypilot-auth-in-progress');
+            }
+          }
         }
-      })
-      .catch((error) => {
+      } catch (error: any) {
         console.error('Redirect sign-in error:', error);
         // Clear auth in progress flag on error
         localStorage.removeItem('daypilot-auth-in-progress');
-      });
+      }
+    };
+
+    handleRedirectResult();
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);

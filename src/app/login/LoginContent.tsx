@@ -30,15 +30,33 @@ export default function LoginContent() {
       if (urlParams.get('redirect') === 'google' || authInProgress) {
         setIsRedirecting(true);
         setIsAuthenticating(true);
+        
+        // Set a timeout to clear the flag if authentication takes too long
+        const timeout = setTimeout(() => {
+          console.log('Authentication timeout - clearing flags');
+          localStorage.removeItem('daypilot-auth-in-progress');
+          setIsRedirecting(false);
+          setIsAuthenticating(false);
+          toast({
+            variant: "destructive",
+            title: "Authentication timeout",
+            description: "Please try signing in again"
+          });
+        }, 10000); // 10 second timeout
+        
+        // Clear timeout if component unmounts
+        return () => clearTimeout(timeout);
       }
     };
     checkRedirect();
-  }, []);
+  }, [toast]);
 
   // Clear auth flag when user is successfully logged in
   React.useEffect(() => {
     if (user) {
       localStorage.removeItem('daypilot-auth-in-progress');
+      setIsAuthenticating(false);
+      setIsRedirecting(false);
     }
   }, [user]);
 
@@ -105,8 +123,8 @@ export default function LoginContent() {
     setLoading(true);
     setIsAuthenticating(true);
     
-    // Mark that we're starting authentication
-    localStorage.setItem('daypilot-auth-in-progress', 'true');
+    // Mark that we're starting authentication with timestamp
+    localStorage.setItem('daypilot-auth-in-progress', Date.now().toString());
     
     try {
       // Detect if mobile
@@ -142,7 +160,25 @@ export default function LoginContent() {
           <CardContent className="p-8">
             <div className="flex flex-col items-center gap-4">
               <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-muted-foreground">Signing in with Google...</p>
+              <p className="text-sm text-muted-foreground text-center">
+                Signing in with Google...
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
+                This may take a few seconds
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  localStorage.removeItem('daypilot-auth-in-progress');
+                  setIsRedirecting(false);
+                  setIsAuthenticating(false);
+                  setLoading(false);
+                }}
+                className="mt-4"
+              >
+                Cancel
+              </Button>
             </div>
           </CardContent>
         </Card>
