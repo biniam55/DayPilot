@@ -51,6 +51,24 @@ export default function LoginContent() {
     checkRedirect();
   }, [toast]);
 
+  // Check if user has seen welcome page (only for direct visits, not after auth)
+  React.useEffect(() => {
+    // Only check welcome if:
+    // 1. Not currently authenticating
+    // 2. No auth in progress flag
+    // 3. Not coming from a redirect
+    const authInProgress = localStorage.getItem('daypilot-auth-in-progress');
+    const urlParams = new URLSearchParams(window.location.search);
+    const isFromRedirect = urlParams.get('redirect') === 'google';
+    
+    if (!isAuthenticating && !authInProgress && !isFromRedirect && !authLoading && !user) {
+      const hasSeenWelcome = localStorage.getItem('daypilot-welcome-seen');
+      if (!hasSeenWelcome) {
+        router.push('/welcome');
+      }
+    }
+  }, [isAuthenticating, authLoading, user, router]);
+
   // Clear auth flag when user is successfully logged in
   React.useEffect(() => {
     if (user) {
@@ -69,16 +87,6 @@ export default function LoginContent() {
       setTimeout(() => setIsAuthenticating(false), 500);
     }
   }, [authLoading]);
-
-  // Check if user has seen welcome page (only when NOT authenticating)
-  React.useEffect(() => {
-    if (!authLoading && !user && !isAuthenticating) {
-      const hasSeenWelcome = localStorage.getItem('daypilot-welcome-seen');
-      if (!hasSeenWelcome) {
-        router.push('/welcome');
-      }
-    }
-  }, [authLoading, user, isAuthenticating, router]);
 
   // Redirect if already logged in
   React.useEffect(() => {
