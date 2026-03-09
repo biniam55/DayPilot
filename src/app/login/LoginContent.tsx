@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { AuthDebug } from '@/components/AuthDebug';
 
 export default function LoginContent() {
   const { signIn, signUp, signInWithGoogle, user, loading: authLoading } = useAuthContext();
@@ -19,99 +18,6 @@ export default function LoginContent() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
-  const [isAuthenticating, setIsAuthenticating] = useState(false);
-
-  // Check if we're coming back from a redirect
-  React.useEffect(() => {
-    const checkRedirect = async () => {
-      const authInProgress = localStorage.getItem('daypilot-auth-in-progress');
-      
-      if (authInProgress) {
-        setIsRedirecting(true);
-        setIsAuthenticating(true);
-        
-        // Set a longer timeout for mobile (30 seconds)
-        const timeout = setTimeout(() => {
-          console.log('Authentication timeout - clearing flags');
-          localStorage.removeItem('daypilot-auth-in-progress');
-          setIsRedirecting(false);
-          setIsAuthenticating(false);
-          toast({
-            variant: "destructive",
-            title: "Authentication timeout",
-            description: "Please try signing in again"
-          });
-        }, 30000); // 30 second timeout for mobile
-        
-        // Clear timeout if component unmounts
-        return () => clearTimeout(timeout);
-      }
-    };
-    checkRedirect();
-  }, [toast]);
-
-  // Check if user has seen welcome page (only for direct visits, not after auth)
-  // TEMPORARILY DISABLED - interfering with Google auth
-  /*
-  React.useEffect(() => {
-    // NEVER check welcome if any of these conditions are true:
-    // 1. Currently authenticating
-    // 2. Auth in progress flag exists
-    // 3. Auth is loading
-    // 4. User exists
-    // 5. We just came from a redirect (check URL params)
-    const authInProgress = localStorage.getItem('daypilot-auth-in-progress');
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasAuthParams = urlParams.has('code') || urlParams.has('state');
-    
-    // Skip welcome check entirely if any auth-related condition is present
-    if (isAuthenticating || authInProgress || authLoading || user || hasAuthParams) {
-      return;
-    }
-    
-    // Only now check if welcome screen should be shown
-    const hasSeenWelcome = localStorage.getItem('daypilot-welcome-seen');
-    if (!hasSeenWelcome) {
-      // Add longer delay to ensure auth state is fully settled
-      const timer = setTimeout(() => {
-        // Triple-check no auth is happening
-        const stillNoAuth = !localStorage.getItem('daypilot-auth-in-progress');
-        const stillNoUser = !user;
-        const urlCheck = new URLSearchParams(window.location.search);
-        const stillNoAuthParams = !urlCheck.has('code') && !urlCheck.has('state');
-        
-        if (stillNoAuth && stillNoUser && stillNoAuthParams) {
-          router.push('/welcome');
-        }
-      }, 1000); // Increased to 1 second
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isAuthenticating, authLoading, user, router]);
-  */
-
-  // Clear auth flag when user is successfully logged in
-  React.useEffect(() => {
-    if (user) {
-      localStorage.removeItem('daypilot-auth-in-progress');
-      setIsAuthenticating(false);
-      setIsRedirecting(false);
-    }
-  }, [user]);
-
-  // Mark as authenticating when auth is loading
-  React.useEffect(() => {
-    if (authLoading) {
-      setIsAuthenticating(true);
-    } else {
-      // Only clear authenticating if we have a user or no auth in progress
-      const authInProgress = localStorage.getItem('daypilot-auth-in-progress');
-      if (user || !authInProgress) {
-        setTimeout(() => setIsAuthenticating(false), 300);
-      }
-    }
-  }, [authLoading, user]);
 
   // Redirect if already logged in
   React.useEffect(() => {
@@ -154,75 +60,21 @@ export default function LoginContent() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    setIsAuthenticating(true);
-    
-    // Detect if mobile
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    
-    // Only set flag for mobile (redirect flow)
-    if (isMobile) {
-      localStorage.setItem('daypilot-auth-in-progress', Date.now().toString());
-      setIsRedirecting(true);
-    }
-    
     try {
       await signInWithGoogle();
-      // For desktop popup: success is handled in AuthContext and redirects immediately
-      // For mobile redirect: this code won't execute (page navigates away)
+      toast({ title: "Logged in with Google" });
     } catch (error: any) {
-      // Only show error if it's not a user cancellation
-      if (error.message && !error.message.includes('cancelled') && !error.message.includes('closed')) {
-        toast({ 
-          variant: "destructive", 
-          title: "Google Sign-In Failed", 
-          description: error.message 
-        });
-      }
+      toast({ 
+        variant: "destructive", 
+        title: "Google Sign-In Failed", 
+        description: error.message 
+      });
       setLoading(false);
-      setIsRedirecting(false);
-      setIsAuthenticating(false);
-      // Clear auth flag on error
-      localStorage.removeItem('daypilot-auth-in-progress');
     }
   };
 
-  // Show loading state during redirect
-  if (isRedirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md shadow-xl border-primary/10">
-          <CardContent className="p-8">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-              <p className="text-sm text-muted-foreground text-center">
-                Signing in with Google...
-              </p>
-              <p className="text-xs text-muted-foreground text-center">
-                This may take a few seconds
-              </p>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {
-                  localStorage.removeItem('daypilot-auth-in-progress');
-                  setIsRedirecting(false);
-                  setIsAuthenticating(false);
-                  setLoading(false);
-                }}
-                className="mt-4"
-              >
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <AuthDebug />
       <Card className="w-full max-w-md shadow-xl border-primary/10">
         <CardHeader className="space-y-1">
           <div className="flex items-center gap-2 mb-2">
