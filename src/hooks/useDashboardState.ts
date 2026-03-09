@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
 import { useTaskReminders } from "@/hooks/useTaskReminders";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { INITIAL_TASKS, DEFAULT_PREFERENCES, DEFAULT_PROFILE, INITIAL_NOTIFICATIONS } from "@/lib/constants";
 
 interface Notification {
@@ -19,6 +20,7 @@ interface Notification {
 
 export function useDashboardState() {
   const { toast } = useToast();
+  const { user } = useAuthContext();
   const { newVersionAvailable, reloadApp } = useVersionCheck();
   const [tasks, setTasks] = useLocalStorage<Task[]>('daypilot-tasks', INITIAL_TASKS);
   const [preferences, setPreferences] = useLocalStorage<UserPreferences>('daypilot-preferences', DEFAULT_PREFERENCES);
@@ -33,6 +35,17 @@ export function useDashboardState() {
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
   const [isClient, setIsClient] = useState(false);
   const [celebrateCompletionCallback, setCelebrateCompletionCallback] = useState<((taskName: string) => void) | null>(null);
+
+  // Initialize profile with user data
+  useEffect(() => {
+    if (user && (!profile.name || profile.name === DEFAULT_PROFILE.name)) {
+      setProfile({
+        ...profile,
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+      });
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Add notification handler for task reminders
   const addNotification = useCallback((notification: Notification) => {

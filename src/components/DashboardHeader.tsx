@@ -1,5 +1,6 @@
 import React from 'react';
 import { UserProfile } from "@/lib/types";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Bell, Moon, Sun, User, LogOut, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface Notification {
   id: string;
@@ -51,6 +53,22 @@ export function DashboardHeader({
   onMarkNotificationRead,
   navContent
 }: DashboardHeaderProps) {
+  const { signOut } = useAuthContext();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({ title: "Logged out successfully" });
+    } catch (error: any) {
+      toast({ 
+        variant: "destructive", 
+        title: "Logout failed", 
+        description: error.message 
+      });
+    }
+  };
+
   const viewTitles: Record<string, string> = {
     planner: 'Daily Plan',
     dashboard: 'Dashboard',
@@ -165,7 +183,7 @@ export function DashboardHeader({
               <User className="w-4 h-4 mr-2" /> Edit Profile
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-2" /> Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

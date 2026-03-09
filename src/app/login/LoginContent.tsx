@@ -1,13 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAuth } from '@/firebase';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider
-} from 'firebase/auth';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,26 +10,43 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 
 export default function LoginContent() {
-  const auth = useAuth();
+  const { signIn, signUp, signInWithGoogle, user } = useAuthContext();
   const router = useRouter();
   const { toast } = useToast();
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
+  // Redirect if already logged in
+  React.useEffect(() => {
+    if (user) {
+      router.push('/');
+    }
+  }, [user, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
     try {
       if (isRegistering) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        if (!displayName.trim()) {
+          toast({ 
+            variant: "destructive", 
+            title: "Name required", 
+            description: "Please enter your name" 
+          });
+          setLoading(false);
+          return;
+        }
+        await signUp(email, password, displayName);
         toast({ title: "Account created!", description: "Welcome to DayPilot." });
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signIn(email, password);
         toast({ title: "Logged in successfully" });
       }
-      router.push('/');
     } catch (error: any) {
       toast({ 
         variant: "destructive", 
@@ -48,12 +59,18 @@ export default function LoginContent() {
   };
 
   const handleGoogleSignIn = async () => {
+    setLoading(true);
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.push('/');
+      await signInWithGoogle();
+      toast({ title: "Logged in with Google" });
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Login failed", description: error.message });
+      toast({ 
+        variant: "destructive", 
+        title: "Google Sign-In Failed", 
+        description: error.message 
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -72,7 +89,20 @@ export default function LoginContent() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form onSubmit={handleEmailAuth} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isRegistering && (
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input 
+                  id="name" 
+                  type="text" 
+                  placeholder="John Doe" 
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  required 
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input 
@@ -89,13 +119,15 @@ export default function LoginContent() {
               <Input 
                 id="password" 
                 type="password" 
+                placeholder={isRegistering ? "Min. 6 characters" : "Enter password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                minLength={6}
                 required 
               />
             </div>
             <Button className="w-full" type="submit" disabled={loading}>
-              {loading ? "Processing..." : isRegistering ? "Register" : "Sign In"}
+              {loading ? "Processing..." : isRegistering ? "Create Account" : "Sign In"}
             </Button>
           </form>
 
@@ -108,7 +140,13 @@ export default function LoginContent() {
             </div>
           </div>
 
-          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
+          <Button 
+            variant="outline" 
+            className="w-full" 
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            type="button"
+          >
             <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
               <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
             </svg>
@@ -120,6 +158,7 @@ export default function LoginContent() {
             variant="link" 
             className="w-full text-xs" 
             onClick={() => setIsRegistering(!isRegistering)}
+            disabled={loading}
           >
             {isRegistering ? "Already have an account? Sign In" : "Don't have an account? Register"}
           </Button>

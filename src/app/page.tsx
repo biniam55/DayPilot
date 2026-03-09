@@ -1,6 +1,7 @@
 "use client"
 
 import React, { lazy, Suspense, useState, useEffect } from 'react';
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useDashboardState } from "@/hooks/useDashboardState";
 import { useVersionCheck } from "@/hooks/useVersionCheck";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -130,7 +131,8 @@ export default function DayPilotDashboard() {
   );
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden text-foreground">
+    <ProtectedRoute>
+      <div className="flex h-screen bg-background overflow-hidden text-foreground">
       {/* Sidebar Navigation - Desktop */}
       <aside className="w-64 border-r bg-card hidden md:flex flex-col shrink-0">
         {navContent}
@@ -266,5 +268,6 @@ export default function DayPilotDashboard() {
       {/* Offline Indicator */}
       <OfflineIndicator />
     </div>
+    </ProtectedRoute>
   );
 }

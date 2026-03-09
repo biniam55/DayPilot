@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { AuthProvider } from "@/contexts/AuthContext"; // Real Firebase auth
+// import { DemoAuthProvider as AuthProvider } from "@/contexts/DemoAuthContext"; // Demo mode (no Firebase needed)
 
 export const metadata: Metadata = {
   title: "DayPilot - Smart Task Management",
@@ -31,9 +33,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
-        <ServiceWorkerRegistration />
-        {children}
-        <Toaster />
+        <AuthProvider>
+          <ServiceWorkerRegistration />
+          {children}
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );
